@@ -1,0 +1,17 @@
+{
+  "name": "node-python",
+  "version": "1.0.0",
+  "description": "Node - Python interopability",
+  "main": "index.js",
+  "author": "Nick Franken <shnick@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "install": "node-gyp rebuild",
+    "compile": "node-gyp rebuild"
+  },
+  "devDependencies": {
+    "nan": "^2.14.0",
+    "node-gyp": "^5.0.0"
+  },
+  "gypfile": true
+}

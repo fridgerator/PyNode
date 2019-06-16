@@ -1,0 +1,5 @@
+/node_modules
+/Python-3.7.3
+/build
+/.vscode
+__pycache__
