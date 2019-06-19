@@ -1,9 +1,10 @@
 {
   "targets": [
     {
-      "target_name": "main",
+      "target_name": "PyNode",
       "sources": [
-        "main.cc"
+        "src/main.cpp",
+        "src/helpers.cpp"
       ],
       "include_dirs": [
         "<!(node -e \"require('nan')\")",

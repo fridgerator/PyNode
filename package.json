@@ -7,9 +7,12 @@
   "license": "MIT",
   "scripts": {
     "install": "node-gyp rebuild",
-    "compile": "node-gyp rebuild"
+    "compile": "node-gyp rebuild",
+    "test": "mocha"
   },
   "devDependencies": {
+    "chai": "^4.2.0",
+    "mocha": "^6.1.4",
     "nan": "^2.14.0",
     "node-gyp": "^5.0.0"
   },
