@@ -65,6 +65,11 @@ void Call(const Nan::FunctionCallbackInfo<v8::Value> &args)
         auto arr = BuildV8Array(pValue);
         args.GetReturnValue().Set(arr);
       }
+      else if (strcmp(pValue->ob_type->tp_name, "dict") == 0)
+      {
+        auto obj = BuildV8Dict(pValue);
+        args.GetReturnValue().Set(obj);
+      }
       Py_DECREF(pValue);
     }
     else

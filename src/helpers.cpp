@@ -1,5 +1,73 @@
 #include "helpers.h"
 
+PyObject *BuildPyDict(v8::Local<v8::Value> arg)
+{
+  // v8::Local<v8::Object> obj = Nan::New<v8::Object>(arg);
+  auto obj = arg->ToObject();
+  auto keys = obj->GetOwnPropertyNames();
+  PyObject *dict = PyDict_New();
+  for (unsigned int i = 0; i < keys->Length(); i++)
+  {
+    auto key = keys->Get(i);
+    v8::Local<v8::Value> val = obj->Get(key);
+    v8::String::Utf8Value keyStr(key);
+    if (val->IsNumber())
+    {
+      double num = val->NumberValue();
+      if (val->IsInt32())
+      {
+        PyDict_SetItem(dict, PyBytes_FromString(*keyStr), PyLong_FromLong(num));
+      }
+      else
+      {
+        PyDict_SetItem(dict, PyBytes_FromString(*keyStr), PyFloat_FromDouble(num));
+      }
+    }
+    else if (val->IsString())
+    {
+      v8::String::Utf8Value str(val);
+      PyDict_SetItem(dict, PyBytes_FromString(*keyStr), PyBytes_FromString(*str));
+    }
+    else if (val->IsBoolean())
+    {
+      long b = val->BooleanValue();
+      PyDict_SetItem(dict, PyBytes_FromString(*keyStr), PyBool_FromLong(b));
+    }
+    else if (val->IsDate())
+    {
+      printf("Dates dont work yet");
+      Nan::ThrowError("Dates dont work yet");
+
+      // double millisSinceEpoch = v8::Date::Cast(*val)->NumberValue();
+      // time_t t = static_cast<time_t>(millisSinceEpoch / 1000);
+      // struct tm *tmp = gmtime(&t);
+      // PyDateTime_FromDateAndTime(tmp->tm_year, tmp->tm_mon, tmp->tm_mday, tmp->tm_hour, tmp->tm_min, tmp->tm_sec, 0)
+      // auto d = PyDateTime_FromDateAndTime(200, 6, 18, 20, 10, 10, 0);
+      // printf("got the d\n");
+      // PyTuple_SetItem(
+      //     pArgs,
+      //     i - 1,
+      //     d);
+      // printf("after date set\n");
+    }
+    else if (val->IsArray())
+    {
+      PyObject *innerList = BuildPyArray(val);
+      PyDict_SetItem(dict, PyBytes_FromString(*keyStr), innerList);
+    }
+    else if (val->IsObject())
+    {
+      PyObject *innerDict = BuildPyDict(val);
+      PyDict_SetItem(dict, PyBytes_FromString(*keyStr), innerDict);
+    }
+    else if (val->IsUint32())
+    {
+      // args.GetReturnValue().Set(Nan::New("uint32").ToLocalChecked());
+    }
+  }
+  return dict;
+}
+
 PyObject *BuildPyArray(v8::Local<v8::Value> arg)
 {
   v8::Local<v8::Array> arr = v8::Local<v8::Array>::Cast(arg);
@@ -54,7 +122,8 @@ PyObject *BuildPyArray(v8::Local<v8::Value> arg)
     }
     else if (element->IsObject())
     {
-      // args.GetReturnValue().Set(Nan::New("object").ToLocalChecked());
+      PyObject *innerDict = BuildPyDict(element);
+      PyTuple_SetItem(list, i, innerDict);
     }
     else if (element->IsUint32())
     {
@@ -118,8 +187,8 @@ PyObject *BuildPyArgs(const Nan::FunctionCallbackInfo<v8::Value> &args)
     }
     else if (arg->IsObject())
     {
-      Nan::ThrowError("Object not supported yet");
-      // args.GetReturnValue().Set(Nan::New("object").ToLocalChecked());
+      PyObject *dict = BuildPyDict(arg);
+      PyTuple_SetItem(pArgs, i - 1, dict);
     }
     else if (arg->IsUint32())
     {
@@ -165,9 +234,19 @@ v8::Local<v8::Array> BuildV8Array(PyObject *obj)
       auto innerArr = BuildV8Array(localObj);
       arr->Set(i, innerArr);
     }
+    else if (strcmp(localObj->ob_type->tp_name, "dict") == 0)
+    {
+      auto innerDict = BuildV8Dict(localObj);
+      arr->Set(i, innerDict);
+    }
     Py_DECREF(localObj);
   }
   return arr;
+}
+
+v8::Local<v8::Object> BuildV8Dict(PyObject *obj)
+{
+  
 }
 
 int Py_GetNumArguments(PyObject *pFunc)
