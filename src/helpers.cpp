@@ -2,7 +2,6 @@
 
 PyObject *BuildPyDict(v8::Local<v8::Value> arg)
 {
-  // v8::Local<v8::Object> obj = Nan::New<v8::Object>(arg);
   auto obj = arg->ToObject();
   auto keys = obj->GetOwnPropertyNames();
   PyObject *dict = PyDict_New();
@@ -11,27 +10,28 @@ PyObject *BuildPyDict(v8::Local<v8::Value> arg)
     auto key = keys->Get(i);
     v8::Local<v8::Value> val = obj->Get(key);
     v8::String::Utf8Value keyStr(key);
+    PyObject *pyKey = PyBytes_FromString(*keyStr);
     if (val->IsNumber())
     {
       double num = val->NumberValue();
       if (val->IsInt32())
       {
-        PyDict_SetItem(dict, PyBytes_FromString(*keyStr), PyLong_FromLong(num));
+        PyDict_SetItem(dict, pyKey, PyLong_FromLong(num));
       }
       else
       {
-        PyDict_SetItem(dict, PyBytes_FromString(*keyStr), PyFloat_FromDouble(num));
+        PyDict_SetItem(dict, pyKey, PyFloat_FromDouble(num));
       }
     }
     else if (val->IsString())
     {
       v8::String::Utf8Value str(val);
-      PyDict_SetItem(dict, PyBytes_FromString(*keyStr), PyBytes_FromString(*str));
+      PyDict_SetItem(dict, pyKey, PyBytes_FromString(*str));
     }
     else if (val->IsBoolean())
     {
       long b = val->BooleanValue();
-      PyDict_SetItem(dict, PyBytes_FromString(*keyStr), PyBool_FromLong(b));
+      PyDict_SetItem(dict, pyKey, PyBool_FromLong(b));
     }
     else if (val->IsDate())
     {
@@ -53,12 +53,12 @@ PyObject *BuildPyDict(v8::Local<v8::Value> arg)
     else if (val->IsArray())
     {
       PyObject *innerList = BuildPyArray(val);
-      PyDict_SetItem(dict, PyBytes_FromString(*keyStr), innerList);
+      PyDict_SetItem(dict, pyKey, innerList);
     }
     else if (val->IsObject())
     {
       PyObject *innerDict = BuildPyDict(val);
-      PyDict_SetItem(dict, PyBytes_FromString(*keyStr), innerDict);
+      PyDict_SetItem(dict, pyKey, innerDict);
     }
     else if (val->IsUint32())
     {
@@ -136,8 +136,7 @@ PyObject *BuildPyArray(v8::Local<v8::Value> arg)
 
 PyObject *BuildPyArgs(const Nan::FunctionCallbackInfo<v8::Value> &args)
 {
-  PyObject *pArgs;
-  pArgs = PyTuple_New(args.Length() - 1);
+  PyObject *pArgs = PyTuple_New(args.Length() - 1);
   for (int i = 1; i < args.Length(); i++)
   {
     auto arg = args[i];
@@ -239,14 +238,52 @@ v8::Local<v8::Array> BuildV8Array(PyObject *obj)
       auto innerDict = BuildV8Dict(localObj);
       arr->Set(i, innerDict);
     }
-    Py_DECREF(localObj);
   }
   return arr;
 }
 
 v8::Local<v8::Object> BuildV8Dict(PyObject *obj)
 {
-  
+  auto keys = PyDict_Keys(obj);
+  auto size = PyList_GET_SIZE(keys);
+  v8::Local<v8::Object> jsObj = Nan::New<v8::Object>();
+  for (Py_ssize_t i = 0; i < size; i++)
+  {
+    auto key = PyList_GetItem(keys, i);
+    auto val = PyDict_GetItem(obj, key);
+    auto jsKey = Nan::New(PyBytes_AsString(key)).ToLocalChecked();
+    if (strcmp(val->ob_type->tp_name, "int") == 0)
+    {
+      double result = PyLong_AsDouble(val);
+      jsObj->Set(jsKey, Nan::New(result));
+    }
+    else if (strcmp(val->ob_type->tp_name, "float") == 0)
+    {
+      double result = PyFloat_AsDouble(val);
+      jsObj->Set(jsKey, Nan::New(result));
+    }
+    else if (strcmp(val->ob_type->tp_name, "bytes") == 0)
+    {
+      auto str = Nan::New(PyBytes_AsString(val)).ToLocalChecked();
+      jsObj->Set(jsKey, str);
+    }
+    else if (strcmp(val->ob_type->tp_name, "bool") == 0)
+    {
+      bool b = PyObject_IsTrue(val);
+      jsObj->Set(jsKey, Nan::New(b));
+    }
+    else if (strcmp(val->ob_type->tp_name, "list") == 0)
+    {
+      auto innerArr = BuildV8Array(val);
+      jsObj->Set(jsKey, innerArr);
+    }
+    else if (strcmp(val->ob_type->tp_name, "dict") == 0)
+    {
+      auto innerDict = BuildV8Dict(val);
+      jsObj->Set(jsKey, innerDict);
+    }
+  }
+  return jsObj;
 }
 
 int Py_GetNumArguments(PyObject *pFunc)

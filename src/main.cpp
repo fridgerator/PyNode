@@ -36,7 +36,7 @@ void Call(const Nan::FunctionCallbackInfo<v8::Value> &args)
     pValue = PyObject_CallObject(pFunc, pArgs);
     Py_DECREF(pArgs);
 
-    printf("return type : %s\n", pValue->ob_type->tp_name);
+    // printf("return type : %s\n", pValue->ob_type->tp_name);
 
     if (pValue != NULL)
     {
