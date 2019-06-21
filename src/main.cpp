@@ -1,6 +1,5 @@
 #include <Python.h>
 // #include <datetime.h>
-// #include <node.h>
 #include <nan.h>
 #include <string>
 #include <time.h>
@@ -26,9 +25,12 @@ void Call(const Nan::FunctionCallbackInfo<v8::Value> &args)
     // Check if the passed args length matches the python function args length
     if (passedArgsCount != pythonArgsCount)
     {
-      char buff[100];
-      snprintf(buff, sizeof(buff), "The function '%s' has %d arguments, %d were passed", *functionName, pythonArgsCount, passedArgsCount);
-      Nan::ThrowError(buff);
+      char *error;
+      size_t len = (size_t)snprintf(NULL, 0, "The function '%s' has %d arguments, %d were passed", *functionName, pythonArgsCount, passedArgsCount);
+      error = (char *)malloc(len + 1);
+      snprintf(error, len + 1, "The function '%s' has %d arguments, %d were passed", *functionName, pythonArgsCount, passedArgsCount);
+      Nan::ThrowError(error);
+      free(error);
       return;
     }
 
@@ -88,20 +90,45 @@ void Call(const Nan::FunctionCallbackInfo<v8::Value> &args)
   }
 }
 
-void Initialize(v8::Local<v8::Object> exports)
+void StartInterpreter(const Nan::FunctionCallbackInfo<v8::Value> &args)
 {
-  // Initialize Python
-  std::wstring path(L"/usr/lib/python3.7:/usr/local/lib/python3.7/lib-dynload:/usr/local/lib/python3.7/site-packages");
-  const wchar_t *stdlib = path.c_str();
-  Py_SetPath(stdlib);
-
-  exports->Set(
-      Nan::New("call").ToLocalChecked(),
-      Nan::New<v8::FunctionTemplate>(Call)->GetFunction());
+  if (args.Length() == 1 && args[0]->IsString()) {
+    v8::String::Utf8Value pathString(args[0]);
+    std::wstring path(pathString.length(), L'#');
+    mbstowcs(&path[0], *pathString, pathString.length());
+    Py_SetPath(path.c_str());
+  }
 
   Py_Initialize();
+}
+
+void AppendSysPath(const Nan::FunctionCallbackInfo<v8::Value> &args)
+{
+  if (args.Length() == 0 || !args[0]->IsString()) {
+    Nan::ThrowError("Must pass a string to 'appendSysPath'");
+    return;
+  }
+
+  v8::String::Utf8Value pathName(args[0]);
+
+  char *appendPathStr;
+  size_t len = (size_t)snprintf(NULL, 0, "sys.path.append(\"%s\")", *pathName);
+  appendPathStr = (char *)malloc(len + 1);
+  snprintf(appendPathStr, len + 1, "sys.path.append(\"%s\")", *pathName);
+
   PyRun_SimpleString("import sys");
-  PyRun_SimpleString("sys.path.append(\".\")");
+  PyRun_SimpleString(appendPathStr);
+  free(appendPathStr);
+}
+
+void OpenFile(const Nan::FunctionCallbackInfo<v8::Value> &args)
+{
+  if (args.Length() == 0 || !args[0]->IsString()) {
+    Nan::ThrowError("Must pass a string to 'openFile'");
+    return;
+  }
+
+  v8::String::Utf8Value fileName(args[0]);
 
   PyObject *pName;
   pName = PyUnicode_DecodeFSDefault("tools");
@@ -115,6 +142,25 @@ void Initialize(v8::Local<v8::Object> exports)
     Nan::ThrowError("Failed to load python module");
     return;
   }
+}
+
+void Initialize(v8::Local<v8::Object> exports)
+{
+  exports->Set(
+      Nan::New("call").ToLocalChecked(),
+      Nan::New<v8::FunctionTemplate>(Call)->GetFunction());
+
+  exports->Set(
+      Nan::New("startInterpreter").ToLocalChecked(),
+      Nan::New<v8::FunctionTemplate>(StartInterpreter)->GetFunction());
+
+  exports->Set(
+      Nan::New("appendSysPath").ToLocalChecked(),
+      Nan::New<v8::FunctionTemplate>(AppendSysPath)->GetFunction());
+
+  exports->Set(
+      Nan::New("openFile").ToLocalChecked(),
+      Nan::New<v8::FunctionTemplate>(OpenFile)->GetFunction());
 }
 
 NODE_MODULE(addon, Initialize);

@@ -1,7 +1,7 @@
 {
-  "name": "node-python",
-  "version": "1.0.0",
-  "description": "Node - Python interopability",
+  "name": "pynode",
+  "version": "0.1.0",
+  "description": "Node <-> Python interopability",
   "main": "index.js",
   "author": "Nick Franken <shnick@gmail.com>",
   "license": "MIT",
@@ -16,5 +16,6 @@
     "nan": "^2.14.0",
     "node-gyp": "^5.0.0"
   },
-  "gypfile": true
+  "gypfile": true,
+  "types": "pynode.d.ts"
 }

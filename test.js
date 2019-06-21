@@ -1,6 +1,12 @@
 const expect = require('chai').expect
 const nodePython = require('./build/Release/PyNode')
 
+// nodePython.setPythonPath("/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6")
+
+nodePython.startInterpreter()
+nodePython.appendSysPath('.')
+nodePython.openFile("tools")
+
 describe('nodePython', () => {
   describe('#call', () => {
 
@@ -94,6 +100,16 @@ describe('nodePython', () => {
           }
         }
         expect(nodePython.call('return_immediate', crazyObj)).to.deep.equal(crazyObj)
+      })
+
+      it('should merge two dicts', () => {
+        let x = {
+          hey: 'guys'
+        }
+        let y = {
+          other: 1
+        }
+        expect(nodePython.call('merge_two_dicts', x, y)).to.deep.equal({ hey: 'guys', other: 1 })
       })
     })
   })
