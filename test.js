@@ -4,7 +4,7 @@ const nodePython = require('./build/Release/PyNode')
 // nodePython.setPythonPath("/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6")
 
 nodePython.startInterpreter()
-nodePython.appendSysPath('.')
+nodePython.appendSysPath('./test_files')
 nodePython.openFile("tools")
 
 describe('nodePython', () => {

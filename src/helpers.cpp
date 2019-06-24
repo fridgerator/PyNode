@@ -155,7 +155,7 @@ PyObject *BuildPyArgs(const Nan::FunctionCallbackInfo<v8::Value> &args)
     else if (arg->IsString())
     {
       v8::String::Utf8Value str(arg);
-      PyTuple_SetItem(pArgs, i - 1, PyBytes_FromString(*str));
+      PyTuple_SetItem(pArgs, i - 1, PyUnicode_FromString(*str));
     }
     else if (arg->IsBoolean())
     {

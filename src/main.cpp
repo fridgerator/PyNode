@@ -57,6 +57,11 @@ void Call(const Nan::FunctionCallbackInfo<v8::Value> &args)
         auto str = Nan::New(PyBytes_AsString(pValue)).ToLocalChecked();
         args.GetReturnValue().Set(str);
       }
+      else if (strcmp(pValue->ob_type->tp_name, "str") == 0)
+      {
+        auto str = Nan::New(PyUnicode_AsUTF8(pValue)).ToLocalChecked();
+        args.GetReturnValue().Set(str);
+      }
       else if (strcmp(pValue->ob_type->tp_name, "bool") == 0)
       {
         bool b = PyObject_IsTrue(pValue);
@@ -74,13 +79,13 @@ void Call(const Nan::FunctionCallbackInfo<v8::Value> &args)
       }
       Py_DECREF(pValue);
     }
-    else
-    {
-      Py_DECREF(pFunc);
-      PyErr_Print();
-      fprintf(stderr, "Call failed\n");
-      Nan::ThrowError("Function call failed");
-    }
+    // else
+    // {
+    //   Py_DECREF(pFunc);
+    //   PyErr_Print();
+    //   fprintf(stderr, "Call failed\n");
+    //   Nan::ThrowError("Function call failed");
+    // }
   }
   else
   {
@@ -112,11 +117,10 @@ void AppendSysPath(const Nan::FunctionCallbackInfo<v8::Value> &args)
   v8::String::Utf8Value pathName(args[0]);
 
   char *appendPathStr;
-  size_t len = (size_t)snprintf(NULL, 0, "sys.path.append(\"%s\")", *pathName);
+  size_t len = (size_t)snprintf(NULL, 0, "import sys;sys.path.append(\"%s\")", *pathName);
   appendPathStr = (char *)malloc(len + 1);
-  snprintf(appendPathStr, len + 1, "sys.path.append(\"%s\")", *pathName);
+  snprintf(appendPathStr, len + 1, "import sys;sys.path.append(\"%s\")", *pathName);
 
-  PyRun_SimpleString("import sys");
   PyRun_SimpleString(appendPathStr);
   free(appendPathStr);
 }
@@ -132,13 +136,14 @@ void OpenFile(const Nan::FunctionCallbackInfo<v8::Value> &args)
 
   PyObject *pName;
   pName = PyUnicode_DecodeFSDefault(*fileName);
+
   pModule = PyImport_Import(pName);
   Py_DECREF(pName);
 
   if (pModule == NULL)
   {
     PyErr_Print();
-    fprintf(stderr, "Failed to load \%s\"\n", *fileName);
+    fprintf(stderr, "Failed to load module: %s\n", *fileName);
     Nan::ThrowError("Failed to load python module");
     return;
   }
