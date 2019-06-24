@@ -2,7 +2,7 @@
   "name": "pynode",
   "version": "0.1.0",
   "description": "Node <-> Python interopability",
-  "main": "index.js",
+  "main": "build/Release/PyNode",
   "author": "Nick Franken <shnick@gmail.com>",
   "license": "MIT",
   "scripts": {
