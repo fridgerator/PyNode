@@ -17,5 +17,5 @@
     "node-gyp": "^5.0.0"
   },
   "gypfile": true,
-  "types": "pynode.d.ts"
+  "types": "index.d.ts"
 }
