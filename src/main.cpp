@@ -131,14 +131,14 @@ void OpenFile(const Nan::FunctionCallbackInfo<v8::Value> &args)
   v8::String::Utf8Value fileName(args[0]);
 
   PyObject *pName;
-  pName = PyUnicode_DecodeFSDefault("tools");
+  pName = PyUnicode_DecodeFSDefault(*fileName);
   pModule = PyImport_Import(pName);
   Py_DECREF(pName);
 
   if (pModule == NULL)
   {
     PyErr_Print();
-    fprintf(stderr, "Failed to load \%s\"\n", "tools");
+    fprintf(stderr, "Failed to load \%s\"\n", *fileName);
     Nan::ThrowError("Failed to load python module");
     return;
   }
