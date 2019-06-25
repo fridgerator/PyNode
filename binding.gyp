@@ -7,16 +7,27 @@
         "src/helpers.cpp"
       ],
       "include_dirs": [
-        "<!(node -e \"require('nan')\")",
-        # "Python-3.7.3",
-        # "Python-3.7.3/Include",
-        "/Library/Frameworks/Python.framework/Versions/3.6/include/python3.6m"
+        "<!(node -e \"require('nan')\")"
       ],
-      "libraries": [
-        # "-L/usr/local/lib",
-        # "-lpython3.7m"
-        "-L/Library/Frameworks/Python.framework/Versions/3.6/lib",
-        "-lpython3.6m"
+      "conditions": [
+        ['OS=="win"', {
+          "include_dirs": [
+            "<!(echo %PYTHON_INCLUDE_PATH%)"
+          ],
+          "libraries": [
+            "-L<!(echo $PYTHON_LIB_PATH%)",
+            "-l<!(echo %PYTHON_LIB%)"
+          ]
+        }],
+        ['OS!="win"', {
+          "include_dirs": [
+            "<!(echo $PYTHON_INCLUDE_PATH)"
+          ],
+          "libraries": [
+            "-L<!(echo $PYTHON_LIB_PATH)",
+            "-l<!(echo $PYTHON_LIB)"
+          ]
+        }]
       ]
     }
   ]
