@@ -1,6 +1,6 @@
 # PyNode
 
-[![Build Status](https://travis-ci.org/fridgerator/PyNode.svg?branch=master)]
+[![Build Status](https://travis-ci.org/fridgerator/PyNode.svg?branch=master)](https://travis-ci.org/fridgerator/PyNode)
 	
 ### Call python code from node.js
 
