@@ -32,4 +32,14 @@ set PYTHON_INCLUDE_PATH="C:\Users\<username>\AppData\Local\Programs\Python\Pytho
 set PYTHON_LIB_PATH="C:\Users\<username>\AppData\Local\Programs\Python\Python3.6\libs"
 ```
 
+Currently on windows there is an issue with Python and v8 both using global definitions.
+
+Edit ~\AppData\Local\node-gyp\Cache\8.12.0\include\node\v8.h and add the following lines before `enum StateTag` (about line 1777):
+
+```
+#ifdef COMPILER
+#undef COMPILER
+#endif
+```
+
 ## Usage
