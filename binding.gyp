@@ -1,20 +1,34 @@
 {
   "targets": [
     {
-      "target_name": "main",
+      "target_name": "PyNode",
       "sources": [
-        "main.cc"
+        "src/main.cpp",
+        "src/helpers.cpp"
       ],
       "include_dirs": [
-        "<!(node -e \"require('nan')\")",
-        "Python-3.7.3",
-        "Python-3.7.3/Include"
+        "<!(node -e \"require('nan')\")"
       ],
-      "libraries": [
-        # "-L<(module_root_dir)/python3.6/lib",
-        # "-L<(module_root_dir)/Python-3.7.3",
-        "-L/usr/local/lib",
-        "-lpython3.7m"
+      "conditions": [
+        ['OS=="win"', {
+          "include_dirs": [
+            "<!(echo %PYTHON_INCLUDE_PATH%)"
+          ],
+          "msvs_settings": {
+            "VCLinkerTool": {
+              "AdditionalLibraryDirectories": "<!(echo %PYTHON_LIB_PATH%)"
+            }
+          }
+        }],
+        ['OS!="win"', {
+          "include_dirs": [
+            "<!(echo $PYTHON_INCLUDE_PATH)"
+          ],
+          "libraries": [
+            "-L<!(echo $PYTHON_LIB_PATH)",
+            "-l<!(echo $PYTHON_LIB)"
+          ]
+        }]
       ]
     }
   ]

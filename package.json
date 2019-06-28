@@ -1,17 +1,21 @@
 {
-  "name": "node-python",
-  "version": "1.0.0",
-  "description": "Node - Python interopability",
-  "main": "index.js",
+  "name": "pynode",
+  "version": "0.1.0",
+  "description": "Node <-> Python interopability",
+  "main": "build/Release/PyNode",
   "author": "Nick Franken <shnick@gmail.com>",
   "license": "MIT",
   "scripts": {
     "install": "node-gyp rebuild",
-    "compile": "node-gyp rebuild"
+    "compile": "node-gyp rebuild",
+    "test": "mocha"
   },
   "devDependencies": {
+    "chai": "^4.2.0",
+    "mocha": "^6.1.4",
     "nan": "^2.14.0",
     "node-gyp": "^5.0.0"
   },
-  "gypfile": true
+  "gypfile": true,
+  "types": "index.d.ts"
 }
