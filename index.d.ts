@@ -3,4 +3,5 @@ declare module 'pynode' {
   export function appendSysPath(path: string): void;
   export function openFile(filename: string): void;
   export function call(...args: any[]): any;
+  export function eval(...args: any[]): void;
 }

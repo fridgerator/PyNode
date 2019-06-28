@@ -149,6 +149,17 @@ void OpenFile(const Nan::FunctionCallbackInfo<v8::Value> &args)
   }
 }
 
+void Eval(const Nan::FunctionCallbackInfo<v8::Value> &args)
+{
+  if (args.Length() == 0 || !args[0]->IsString()) {
+    Nan::ThrowError("Must pass a string to 'eval'");
+    return;
+  }
+
+  v8::String::Utf8Value statement(args[0]);
+  PyRun_SimpleString(*statement);
+}
+
 void Initialize(v8::Local<v8::Object> exports)
 {
   exports->Set(
@@ -166,6 +177,10 @@ void Initialize(v8::Local<v8::Object> exports)
   exports->Set(
       Nan::New("openFile").ToLocalChecked(),
       Nan::New<v8::FunctionTemplate>(OpenFile)->GetFunction());
+
+  exports->Set(
+      Nan::New("eval").ToLocalChecked(),
+      Nan::New<v8::FunctionTemplate>(Eval)->GetFunction());
 }
 
 NODE_MODULE(addon, Initialize);

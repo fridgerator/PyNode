@@ -8,6 +8,13 @@ nodePython.appendSysPath('./test_files')
 nodePython.openFile("tools")
 
 describe('nodePython', () => {
+  describe('#eval', () => {
+    it('should call eval', () => {
+      // TODO: not sure how to test this
+      nodePython.eval('import sys;print(sys.path)')
+    })
+  })
+
   describe('#call', () => {
 
     it('should throw an exception with the wrong number of arguments', () => {
