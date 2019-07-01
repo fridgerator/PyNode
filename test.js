@@ -13,7 +13,7 @@ describe('nodePython', () => {
     })
 
     it('failed eval should return -1', () => {
-      let response = nodePython.eval('impor randommodulethatshouldnotexist11')
+      let response = nodePython.eval('import randommodulethatshouldnotexist11')
       expect(response).to.equal(-1)
     })
   })
