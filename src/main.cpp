@@ -117,9 +117,9 @@ void AppendSysPath(const Nan::FunctionCallbackInfo<v8::Value> &args)
   v8::String::Utf8Value pathName(args[0]);
 
   char *appendPathStr;
-  size_t len = (size_t)snprintf(NULL, 0, "import sys;sys.path.append(\"%s\")", *pathName);
+  size_t len = (size_t)snprintf(NULL, 0, "import sys;sys.path.append(r\"%s\")", *pathName);
   appendPathStr = (char *)malloc(len + 1);
-  snprintf(appendPathStr, len + 1, "import sys;sys.path.append(\"%s\")", *pathName);
+  snprintf(appendPathStr, len + 1, "import sys;sys.path.append(r\"%s\")", *pathName);
 
   PyRun_SimpleString(appendPathStr);
   free(appendPathStr);
@@ -157,7 +157,8 @@ void Eval(const Nan::FunctionCallbackInfo<v8::Value> &args)
   }
 
   v8::String::Utf8Value statement(args[0]);
-  PyRun_SimpleString(*statement);
+  int response = PyRun_SimpleString(*statement);
+  args.GetReturnValue().Set(Nan::New(response));
 }
 
 void Initialize(v8::Local<v8::Object> exports)

@@ -1,17 +1,20 @@
 const expect = require('chai').expect
 const nodePython = require('./build/Release/PyNode')
 
-// nodePython.setPythonPath("/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6")
-
 nodePython.startInterpreter()
 nodePython.appendSysPath('./test_files')
 nodePython.openFile("tools")
 
 describe('nodePython', () => {
   describe('#eval', () => {
-    it('should call eval', () => {
-      // TODO: not sure how to test this
-      nodePython.eval('import sys;print(sys.path)')
+    it('successful eval should return 0', () => {
+      let response = nodePython.eval('import sys')
+      expect(response).to.equal(0)
+    })
+
+    it('failed eval should return -1', () => {
+      let response = nodePython.eval('impor randommodulethatshouldnotexist11')
+      expect(response).to.equal(-1)
     })
   })
 
