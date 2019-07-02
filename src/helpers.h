@@ -1,4 +1,7 @@
 #include <Python.h>
+#ifdef COMPILER
+#undef COMPILER
+#endif
 #include <nan.h>
 
 // v8 to Python

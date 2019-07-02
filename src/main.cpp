@@ -1,5 +1,8 @@
 #include <Python.h>
 // #include <datetime.h>
+#ifdef COMPILER
+#undef COMPILER
+#endif
 #include <nan.h>
 #include <string>
 #include <time.h>
