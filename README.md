@@ -35,3 +35,33 @@ set PYTHON_LIB_PATH="C:\Users\<username>\AppData\Local\Programs\Python\Python3.6
 ```
 
 ## Usage
+
+Set environment variables listed above
+
+`yarn add @fridgerator/pynode` or
+`npm install @fridgerator/pynode`
+
+In a python file `test.py`:
+
+```python
+def add(a, b):
+  return a + b
+```
+in node:
+
+```javascript
+const pynode = require('@fridgerator\pynode')
+
+// optionally pass a path to use as Python module search path
+pynode.startInterpreter()
+
+// add current path as Python module search path, so it finds our test.py
+pynode.appendSysPath('./')
+
+// open the python file (module)
+pynode.openFile('test')
+
+// call the python function and get a return value
+let x = pynode.call('add', 1, 2)
+x === 3 // true
+```
