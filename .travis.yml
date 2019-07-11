@@ -7,4 +7,6 @@ before_install:
   - python-config --includes
   - python-config --ldflags
   - python-config --cflags
+  # - sudo mkdir -p /usr/local/include/python3.6m
+  - sudo ln -s /opt/python/3.6.3/include/python3.6m /usr/local/include/python3.6m
   - export LD_LIBRARY_PATH=/opt/python/3.6.3/lib:$LD_LIBRARY_PATH
