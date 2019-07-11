@@ -2,7 +2,8 @@ language: node_js
 node_js:
   - "8.12"
 before_install:
-  - export PYTHON_INCLUDE_PATH=/opt/python/3.6.3/include/python3.6m
-  - export PYTHON_LIB_PATH=/opt/python/3.6.3/lib
-  - export PYTHON_LIB=python3.6m
+  - rm -f /usr/local/bin/python-config
+  - ln -s /opt/python/3.6.3/bin/python3-config /usr/local/bin/python-config
+  - python-config --includes
+  - python-config --ldflags
   - export LD_LIBRARY_PATH=/opt/python/3.6.3/lib:$LD_LIBRARY_PATH
