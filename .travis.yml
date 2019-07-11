@@ -4,10 +4,6 @@ node_js:
 before_install:
   - sudo rm -f /usr/local/bin/python-config
   - sudo ln -s /opt/python/3.6.3/bin/python3-config /usr/local/bin/python-config
-  - python-config --includes
-  - python-config --ldflags
-  - python-config --cflags
-  # - sudo mkdir -p /usr/local/include/python3.6m
   - sudo ln -s /opt/python/3.6.3/include/python3.6m /usr/local/include/python3.6m
   - sudo ln -s /opt/python/3.6.3/lib/libpython3.6m.so /usr/local/lib/libpython3.6m.so
   - export LD_LIBRARY_PATH=/opt/python/3.6.3/lib:$LD_LIBRARY_PATH
