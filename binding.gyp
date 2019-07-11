@@ -11,22 +11,24 @@
       ],
       "conditions": [
         ['OS=="win"', {
+          "variables": {
+            "PY_HOME%": "<!(python -c \"import sysconfig;print(sysconfig.get_paths()['data'])\")"
+          },
           "include_dirs": [
-            "<!(echo %PYTHON_INCLUDE_PATH%)"
+            "<!(echo <(PY_HOME)\include)"
           ],
           "msvs_settings": {
             "VCLinkerTool": {
-              "AdditionalLibraryDirectories": "<!(echo %PYTHON_LIB_PATH%)"
+              "AdditionalLibraryDirectories": "<!(echo <(PY_HOME)\libs)"
             }
           }
         }],
         ['OS!="win"', {
           "include_dirs": [
-            "<!(echo $PYTHON_INCLUDE_PATH)"
+            "<!(python-config --includes)"
           ],
           "libraries": [
-            "-L<!(echo $PYTHON_LIB_PATH)",
-            "-l<!(echo $PYTHON_LIB)"
+            "<!(python-config --ldflags)",
           ]
         }]
       ]

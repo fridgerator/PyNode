@@ -8,38 +8,14 @@
 
 ## Installation
 
-All operating systems require some environment variables be present so that PyNode can find your local python installation.  These will be different depending on how Python was installed on your system and will vary even between the same OS.
+**BEFORE NPM INSTALL OR YARN INSTALL**
 
-* Set `PYTHON_INCLUDE_PATH` to your python includes path (contains both `Python.h` and `pyconfig.h` )
-* Set `PYTHON_LIB_PATH` to the path that contains the python lib
-* Set `PYTHON_LIB` to the python lib name (mac and linux only)
-
-On Ubuntu, it might look something like:
-```bash
-export PYTHON_INCLUDE_PATH=/usr/local/include/python3.7m
-export PYTHON_LIB_PATH=/usr/local/lib
-export PYTHON_LIB=python3.7m
-```
-
-Mac using the .pkg installer:
-```bash
-export PYTHON_INCLUDE_PATH=/Library/Frameworks/Python.framework/Versions/3.7/include/python3.7m
-export PYTHON_LIB_PATH=/Library/Frameworks/Python.framework/Versions/3.7/lib
-export PYTHON_LIB=python3.7m
-```
-
-And on Windows installed via official installer for the local user:
-```bash
-set PYTHON_INCLUDE_PATH="C:\Users\<username>\AppData\Local\Programs\Python\Python3.6\include"
-set PYTHON_LIB_PATH="C:\Users\<username>\AppData\Local\Programs\Python\Python3.6\libs"
-```
+* Make sure `python` in your system `PATH` is the correct one: `python --version`
+* **Linux and Mac only**: make sure `python-config` is also in your path and is from the correct python installation.  You may have to symlink `python3-config` to `/usr/local/bin`.
+* `yarn add @fridgerator/pynode` or
+`npm install @fridgerator/pynode`
 
 ## Usage
-
-Set environment variables listed above
-
-`yarn add @fridgerator/pynode` or
-`npm install @fridgerator/pynode`
 
 In a python file `test.py`:
 
