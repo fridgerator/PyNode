@@ -25,7 +25,7 @@
         }],
         ['OS!="win"', {
           "include_dirs": [
-            "<!(python-config --includes)"
+            "<!(python-config --cflags)"
           ],
           "libraries": [
             "<!(python-config --ldflags)",
