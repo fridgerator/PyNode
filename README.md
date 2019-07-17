@@ -26,7 +26,7 @@ def add(a, b):
 in node:
 
 ```javascript
-const pynode = require('@fridgerator\pynode')
+const pynode = require('@fridgerator/pynode')
 
 // optionally pass a path to use as Python module search path
 pynode.startInterpreter()
