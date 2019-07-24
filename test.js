@@ -19,6 +19,11 @@ describe('nodePython', () => {
   })
 
   describe('#call', () => {
+    it('should return the time series data', () => {
+      let d = nodePython.call('time_series_data')
+      expect(typeof d[0][0]).to.equal('string')
+      expect(typeof d[0][1]).to.equal('number')
+    })
 
     it('should throw an exception with the wrong number of arguments', () => {
       let fn = () => { nodePython.call('return_immediate', 9, 9, 9) }

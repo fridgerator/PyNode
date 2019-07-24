@@ -213,6 +213,11 @@ v8::Local<v8::Array> BuildV8Array(PyObject *obj)
       double result = PyLong_AsDouble(localObj);
       arr->Set(i, Nan::New(result));
     }
+    else if (strcmp(localObj->ob_type->tp_name, "str") == 0)
+    {
+      auto str = Nan::New(PyUnicode_AsUTF8(localObj)).ToLocalChecked();
+      arr->Set(i, str);
+    }
     else if (strcmp(localObj->ob_type->tp_name, "float") == 0)
     {
       double result = PyFloat_AsDouble(localObj);
@@ -256,6 +261,11 @@ v8::Local<v8::Object> BuildV8Dict(PyObject *obj)
     {
       double result = PyLong_AsDouble(val);
       jsObj->Set(jsKey, Nan::New(result));
+    }
+    else if (strcmp(val->ob_type->tp_name, "str") == 0)
+    {
+      auto str = Nan::New(PyUnicode_AsUTF8(val)).ToLocalChecked();
+      jsObj->Set(jsKey, str);
     }
     else if (strcmp(val->ob_type->tp_name, "float") == 0)
     {
