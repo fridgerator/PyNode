@@ -28,6 +28,11 @@ in node:
 ```javascript
 const pynode = require('@fridgerator/pynode')
 
+// Workaround for linking issue in linux:
+// https://bugs.python.org/issue4434
+// if you get: `undefined symbol: PyExc_ValueError` or `undefined symbol: PyExc_SystemError`
+pynode.dlOpen('libpython3.6m.so') // your libpython shared library
+
 // optionally pass a path to use as Python module search path
 pynode.startInterpreter()
 
