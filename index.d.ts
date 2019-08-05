@@ -1,5 +1,11 @@
 declare module '@fridgerator/pynode' {
   /**
+   * Fixes dyanmic linking issue in python
+   * @param dlFile Python shared library file name
+   */
+  export function dlOpen(dlFile: string): void;
+
+  /**
    * Initialize the Python interpreter
    *
    * @param pythonpath Optionally set the python module search paths

@@ -1,6 +1,7 @@
 const expect = require('chai').expect
 const nodePython = require('./build/Release/PyNode')
 
+nodePython.dlOpen('libpython3.6m.so')
 nodePython.startInterpreter()
 nodePython.appendSysPath('./test_files')
 nodePython.openFile("tools")

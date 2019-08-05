@@ -6,6 +6,7 @@
 #include <nan.h>
 #include <string>
 #include <time.h>
+#include <dlfcn.h>
 
 #include "helpers.h"
 
@@ -98,6 +99,17 @@ void Call(const Nan::FunctionCallbackInfo<v8::Value> &args)
   }
 }
 
+void DLOpen(const Nan::FunctionCallbackInfo<v8::Value> &args)
+{
+  if (args.Length() != 1 && !args[0]->IsString()) {
+    Nan::ThrowError("Must pass a string to 'dlOpen'");
+    return;
+  }
+
+  v8::String::Utf8Value dlFile(args[0]);
+  dlopen(*dlFile, RTLD_LAZY | RTLD_GLOBAL);
+}
+
 void StartInterpreter(const Nan::FunctionCallbackInfo<v8::Value> &args)
 {
   if (args.Length() == 1 && args[0]->IsString()) {
@@ -169,6 +181,10 @@ void Initialize(v8::Local<v8::Object> exports)
   exports->Set(
       Nan::New("call").ToLocalChecked(),
       Nan::New<v8::FunctionTemplate>(Call)->GetFunction());
+
+  exports->Set(
+      Nan::New("dlOpen").ToLocalChecked(),
+      Nan::New<v8::FunctionTemplate>(DLOpen)->GetFunction());
 
   exports->Set(
       Nan::New("startInterpreter").ToLocalChecked(),
