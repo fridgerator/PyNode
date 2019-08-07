@@ -6,7 +6,9 @@
 #include <nan.h>
 #include <string>
 #include <time.h>
+#ifndef _WIN32
 #include <dlfcn.h>
+#endif
 
 #include "helpers.h"
 
@@ -101,13 +103,20 @@ void Call(const Nan::FunctionCallbackInfo<v8::Value> &args)
 
 void DLOpen(const Nan::FunctionCallbackInfo<v8::Value> &args)
 {
+  #ifdef _WIN32
+    Nan::ThrowError("dlOpen does not work in windows");
+    return;
+  #endif
+
   if (args.Length() != 1 && !args[0]->IsString()) {
     Nan::ThrowError("Must pass a string to 'dlOpen'");
     return;
   }
 
   v8::String::Utf8Value dlFile(args[0]);
+  #ifndef _WIN32
   dlopen(*dlFile, RTLD_LAZY | RTLD_GLOBAL);
+  #endif
 }
 
 void StartInterpreter(const Nan::FunctionCallbackInfo<v8::Value> &args)
