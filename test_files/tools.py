@@ -24,3 +24,7 @@ def merge_two_dicts(x, y):
   z = x.copy()
   z.update(y)
   return z
+
+def return_dict():
+  x = {'size': 71589, 'min': -99.6654762642, 'max': 879.08351843}
+  return x

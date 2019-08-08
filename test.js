@@ -81,7 +81,7 @@ describe('nodePython', () => {
         expect(nodePython.call('return_immediate', x)).to.deep.equal(x)
       })
 
-      it.skip('should return the correct value when passing arrays with objects', () => {
+      it('should return the correct value when passing arrays with objects', () => {
         let x = [
           { array: [1, 2, 3] },
           { string: 'ok', float: 8281.111 }
@@ -91,6 +91,10 @@ describe('nodePython', () => {
     })
 
     describe('objects / dicts', () => {
+      it('should return an object from a python dict', () => {
+        expect(nodePython.call('return_dict')).to.deep.equal({'size': 71589, 'min': -99.6654762642, 'max': 879.08351843})
+      })
+
       it('should return the correct value when passing an object', () => {
         expect(nodePython.call('return_immediate', {})).to.deep.equal({})
       })

@@ -24,9 +24,7 @@ void Call(const Nan::FunctionCallbackInfo<v8::Value> &args)
   if (pFunc && PyCallable_Check(pFunc))
   {
     const int pythonArgsCount = Py_GetNumArguments(pFunc);
-    // printf("this function has %d arguments\n", pythonArgsCount);
     const int passedArgsCount = args.Length() - 1;
-    // printf("you passed %d arguments\n", passedArgsCount);
 
     // Check if the passed args length matches the python function args length
     if (passedArgsCount != pythonArgsCount)

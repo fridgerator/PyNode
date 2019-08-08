@@ -123,7 +123,7 @@ PyObject *BuildPyArray(v8::Local<v8::Value> arg)
     else if (element->IsObject())
     {
       PyObject *innerDict = BuildPyDict(element);
-      PyTuple_SetItem(list, i, innerDict);
+      PyList_SetItem(list, i, innerDict);
     }
     else if (element->IsUint32())
     {
@@ -247,6 +247,14 @@ v8::Local<v8::Array> BuildV8Array(PyObject *obj)
   return arr;
 }
 
+char * getKey(PyObject *key) {
+  if (strcmp(key->ob_type->tp_name, "str") == 0) {
+    return PyUnicode_AsUTF8(key);
+  } else {
+    return PyBytes_AsString(key);
+  }
+}
+
 v8::Local<v8::Object> BuildV8Dict(PyObject *obj)
 {
   auto keys = PyDict_Keys(obj);
@@ -256,7 +264,7 @@ v8::Local<v8::Object> BuildV8Dict(PyObject *obj)
   {
     auto key = PyList_GetItem(keys, i);
     auto val = PyDict_GetItem(obj, key);
-    auto jsKey = Nan::New(PyBytes_AsString(key)).ToLocalChecked();
+    auto jsKey = Nan::New(getKey(key)).ToLocalChecked();
     if (strcmp(val->ob_type->tp_name, "int") == 0)
     {
       double result = PyLong_AsDouble(val);
