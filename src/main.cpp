@@ -80,6 +80,11 @@ void Call(const Nan::FunctionCallbackInfo<v8::Value> &args)
       {
         auto obj = BuildV8Dict(pValue);
         args.GetReturnValue().Set(obj);
+      } 
+      else 
+      {
+        Py_DECREF(pValue);
+        Nan::ThrowError("Unsupported type returned (" + pValue->ob_type->tp_name + "), only pure Python types are supported.");
       }
       Py_DECREF(pValue);
     }
