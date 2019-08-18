@@ -1,4 +1,4 @@
-declare module '@fridgerator/pynode' {
+declare module '@amcquistan/pynode' {
   /**
    * Fixes dyanmic linking issue in python
    * @param dlFile Python shared library file name
@@ -38,7 +38,7 @@ declare module '@fridgerator/pynode' {
    * def add(a, b):
    *   return a + b
    *
-   * const pynode = require('@fridgerator/pynode')
+   * const pynode = require('@amcquistan/pynode')
    * pynode.startInterpreter()
    * pynode.openFile('test')
    * let x = pynode.call('add', 1, 2)
