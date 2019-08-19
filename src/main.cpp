@@ -83,8 +83,9 @@ void Call(const Nan::FunctionCallbackInfo<v8::Value> &args)
       } 
       else 
       {
+        std::string errMsg = std::string("Unsupported type returned (") + pValue->ob_type->tp_name + std::string("), only pure Python types are supported.");
         Py_DECREF(pValue);
-        Nan::ThrowError("Unsupported type returned (" + pValue->ob_type->tp_name + "), only pure Python types are supported.");
+        return Nan::ThrowTypeError(Nan::New(errMsg).ToLocalChecked());
       }
       Py_DECREF(pValue);
     }
