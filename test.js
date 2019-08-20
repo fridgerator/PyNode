@@ -51,6 +51,10 @@ describe('nodePython', () => {
       expect(nodePython.call('return_immediate', false)).to.equal(false)
     })
 
+    it('should return null when python returns None', () => {
+      expect(nodePython.call('return_none')).to.equals(null)
+    })
+
     it.skip('should return the correct value when passing Date', () => {
       let d = new Date()
       expect(nodePython.call('return_immediate', d)).to.equal(d)
@@ -87,6 +91,16 @@ describe('nodePython', () => {
           { string: 'ok', float: 8281.111 }
         ]
         expect(nodePython.call('return_immediate', x)).to.deep.equal(x)
+      })
+
+      it('should return sum of numeric array input', () => {
+        expect(nodePython.call('sum_items', [1, 2, 3])).to.equals(6)
+      })
+    })
+
+    describe('tuples', () => {
+      it('should return an array when a tuple is returned from python', () => {
+        expect(nodePython.call('return_tuple')).to.deep.equal([1, 2, 3])
       })
     })
 

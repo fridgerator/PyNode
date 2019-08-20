@@ -199,46 +199,50 @@ PyObject *BuildPyArgs(const Nan::FunctionCallbackInfo<v8::Value> &args)
   return pArgs;
 }
 
+/**
+ * PyObject can be either a list or tuple
+ */
 v8::Local<v8::Array> BuildV8Array(PyObject *obj)
 {
-  Py_ssize_t len = PyList_Size(obj);
+  Py_ssize_t len = PyList_Check(obj) ? PyList_Size(obj) : PyTuple_Size(obj);
+
   v8::Local<v8::Array> arr = Nan::New<v8::Array>(len);
   for (Py_ssize_t i = 0; i < len; i++)
   {
-    PyObject *localObj = PyList_GetItem(obj, i);
+    PyObject *localObj = PyList_Check(obj) ? PyList_GetItem(obj, i) : PyTuple_GetItem(obj, i);
     if (!localObj)
       continue;
-    if (strcmp(localObj->ob_type->tp_name, "int") == 0)
+    if (PyLong_Check(localObj))
     {
       double result = PyLong_AsDouble(localObj);
       arr->Set(i, Nan::New(result));
     }
-    else if (strcmp(localObj->ob_type->tp_name, "str") == 0)
+    else if (PyUnicode_Check(localObj))
     {
       auto str = Nan::New(PyUnicode_AsUTF8(localObj)).ToLocalChecked();
       arr->Set(i, str);
     }
-    else if (strcmp(localObj->ob_type->tp_name, "float") == 0)
+    else if (PyFloat_Check(localObj))
     {
       double result = PyFloat_AsDouble(localObj);
       arr->Set(i, Nan::New(result));
     }
-    else if (strcmp(localObj->ob_type->tp_name, "bytes") == 0)
+    else if (PyBytes_Check(localObj))
     {
       auto str = Nan::New(PyBytes_AsString(localObj)).ToLocalChecked();
       arr->Set(i, str);
     }
-    else if (strcmp(localObj->ob_type->tp_name, "bool") == 0)
+    else if (PyBool_Check(localObj))
     {
       bool b = PyObject_IsTrue(localObj);
       arr->Set(i, Nan::New(b));
     }
-    else if (strcmp(localObj->ob_type->tp_name, "list") == 0)
+    else if (PyList_Check(localObj) || PyTuple_Check(localObj))
     {
       auto innerArr = BuildV8Array(localObj);
       arr->Set(i, innerArr);
     }
-    else if (strcmp(localObj->ob_type->tp_name, "dict") == 0)
+    else if (PyDict_Check(localObj))
     {
       auto innerDict = BuildV8Dict(localObj);
       arr->Set(i, innerDict);
@@ -248,7 +252,7 @@ v8::Local<v8::Array> BuildV8Array(PyObject *obj)
 }
 
 char * getKey(PyObject *key) {
-  if (strcmp(key->ob_type->tp_name, "str") == 0) {
+  if (PyUnicode_Check(key)) {
     return PyUnicode_AsUTF8(key);
   } else {
     return PyBytes_AsString(key);
@@ -265,37 +269,37 @@ v8::Local<v8::Object> BuildV8Dict(PyObject *obj)
     auto key = PyList_GetItem(keys, i);
     auto val = PyDict_GetItem(obj, key);
     auto jsKey = Nan::New(getKey(key)).ToLocalChecked();
-    if (strcmp(val->ob_type->tp_name, "int") == 0)
+    if (PyLong_Check(val))
     {
       double result = PyLong_AsDouble(val);
       jsObj->Set(jsKey, Nan::New(result));
     }
-    else if (strcmp(val->ob_type->tp_name, "str") == 0)
+    else if (PyUnicode_Check(val))
     {
       auto str = Nan::New(PyUnicode_AsUTF8(val)).ToLocalChecked();
       jsObj->Set(jsKey, str);
     }
-    else if (strcmp(val->ob_type->tp_name, "float") == 0)
+    else if (PyFloat_Check(val))
     {
       double result = PyFloat_AsDouble(val);
       jsObj->Set(jsKey, Nan::New(result));
     }
-    else if (strcmp(val->ob_type->tp_name, "bytes") == 0)
+    else if (PyBytes_Check(val))
     {
       auto str = Nan::New(PyBytes_AsString(val)).ToLocalChecked();
       jsObj->Set(jsKey, str);
     }
-    else if (strcmp(val->ob_type->tp_name, "bool") == 0)
+    else if (PyBool_Check(val))
     {
       bool b = PyObject_IsTrue(val);
       jsObj->Set(jsKey, Nan::New(b));
     }
-    else if (strcmp(val->ob_type->tp_name, "list") == 0)
+    else if (PyList_Check(val) || PyTuple_Check(val))
     {
       auto innerArr = BuildV8Array(val);
       jsObj->Set(jsKey, innerArr);
     }
-    else if (strcmp(val->ob_type->tp_name, "dict") == 0)
+    else if (PyDict_Check(val))
     {
       auto innerDict = BuildV8Dict(val);
       jsObj->Set(jsKey, innerDict);
