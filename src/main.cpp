@@ -50,11 +50,11 @@ void Call(const Nan::FunctionCallbackInfo<v8::Value> &args)
       {
         args.GetReturnValue().Set(Nan::Null());
       }
-      // because booleans are subtypes of integers this check must
-      // come before PyLong_Check (ie, PyBool_Type is always a PyLong_Type but,
-      // a PyLong_Type is not necessarily a PyBool_Type)
       else if (PyBool_Check(pValue))
       {
+        // because booleans are subtypes of integers this check must
+        // come before PyLong_Check (ie, PyBool_Type is always a PyLong_Type but,
+        // a PyLong_Type is not necessarily a PyBool_Type)
         bool b = PyObject_IsTrue(pValue);
         args.GetReturnValue().Set(Nan::New(b));
       }
