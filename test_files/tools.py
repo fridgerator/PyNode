@@ -13,12 +13,18 @@ def time_series_data():
     ])
   return data
 
+def sum_items(arr):
+  return sum(arr)
 
 def multiply(a,b):
-    return a * b
+  return a * b
 
 def return_immediate(x):
+  # print(x, type(x))
   return x
+
+def return_none():
+  return None
 
 def merge_two_dicts(x, y):
   z = x.copy()
@@ -27,4 +33,8 @@ def merge_two_dicts(x, y):
 
 def return_dict():
   x = {'size': 71589, 'min': -99.6654762642, 'max': 879.08351843}
+  return x
+
+def return_tuple():
+  x = (1, 2, 3)
   return x

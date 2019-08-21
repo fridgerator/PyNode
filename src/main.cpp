@@ -46,42 +46,49 @@ void Call(const Nan::FunctionCallbackInfo<v8::Value> &args)
 
     if (pValue != NULL)
     {
-      if (strcmp(pValue->ob_type->tp_name, "int") == 0)
+      if (pValue == Py_None)
+      {
+        args.GetReturnValue().Set(Nan::Null());
+      }
+      else if (PyBool_Check(pValue))
+      {
+        // because booleans are subtypes of integers this check must
+        // come before PyLong_Check (ie, PyBool_Type is always a PyLong_Type but,
+        // a PyLong_Type is not necessarily a PyBool_Type)
+        bool b = PyObject_IsTrue(pValue);
+        args.GetReturnValue().Set(Nan::New(b));
+      }
+      else if (PyLong_Check(pValue))
       {
         double result = PyLong_AsDouble(pValue);
         args.GetReturnValue().Set(Nan::New(result));
       }
-      else if (strcmp(pValue->ob_type->tp_name, "float") == 0)
+      else if (PyFloat_Check(pValue))
       {
         double result = PyFloat_AsDouble(pValue);
         args.GetReturnValue().Set(Nan::New(result));
       }
-      else if (strcmp(pValue->ob_type->tp_name, "bytes") == 0)
+      else if (PyBytes_Check(pValue))
       {
         auto str = Nan::New(PyBytes_AsString(pValue)).ToLocalChecked();
         args.GetReturnValue().Set(str);
       }
-      else if (strcmp(pValue->ob_type->tp_name, "str") == 0)
+      else if (PyUnicode_Check(pValue))
       {
         auto str = Nan::New(PyUnicode_AsUTF8(pValue)).ToLocalChecked();
         args.GetReturnValue().Set(str);
       }
-      else if (strcmp(pValue->ob_type->tp_name, "bool") == 0)
-      {
-        bool b = PyObject_IsTrue(pValue);
-        args.GetReturnValue().Set(Nan::New(b));
-      }
-      else if (strcmp(pValue->ob_type->tp_name, "list") == 0)
+      else if (PyList_Check(pValue) || PyTuple_Check(pValue))
       {
         auto arr = BuildV8Array(pValue);
         args.GetReturnValue().Set(arr);
       }
-      else if (strcmp(pValue->ob_type->tp_name, "dict") == 0)
+      else if (PyDict_Check(pValue))
       {
         auto obj = BuildV8Dict(pValue);
         args.GetReturnValue().Set(obj);
       } 
-      else 
+      else
       {
         std::string errMsg = std::string("Unsupported type returned (") + pValue->ob_type->tp_name + std::string("), only pure Python types are supported.");
         Py_DECREF(pValue);
