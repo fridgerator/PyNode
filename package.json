@@ -1,6 +1,6 @@
 {
   "name": "@fridgerator/pynode",
-  "version": "0.2.9",
+  "version": "0.2.10",
   "description": "Node <-> Python interopability",
   "main": "build/Release/PyNode",
   "author": "Nick Franken <shnick@gmail.com>",
