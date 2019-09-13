@@ -24,11 +24,15 @@
           }
         }],
         ['OS!="win"', {
+          "variables": {
+            "PY_INCLUDE%": "<!(python-config --cflags)",\
+            "PY_LIBS%": "<!(python-config --ldflags)"
+          },
           "include_dirs": [
-            "<!(python-config --cflags)"
+            "<(PY_INCLUDE)"
           ],
           "libraries": [
-            "<!(python-config --ldflags)",
+            "<(PY_LIBS)",
           ]
         }]
       ]
