@@ -253,7 +253,7 @@ v8::Local<v8::Array> BuildV8Array(PyObject *obj)
 
 char * getKey(PyObject *key) {
   if (PyUnicode_Check(key)) {
-    return const_cast<char *>(PyUnicode_AsUTF8(key));
+    return PyUnicode_AsUTF8(key);
   } else {
     return PyBytes_AsString(key);
   }
