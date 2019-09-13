@@ -25,8 +25,8 @@
         }],
         ['OS!="win"', {
           "variables": {
-            "PY_INCLUDE%": "<!(python-config --cflags)",\
-            "PY_LIBS%": "<!(python-config --ldflags)"
+            "PY_INCLUDE%": "<!(if [[ -z $PY_INCLUDE ]]; then echo $(python-config --includes); else echo $PY_INCLUDE; fi)",\
+            "PY_LIBS%": "<!(if [[ -z $PY_LIBS ]]; then echo $(python-config --ldflags); else echo $PY_LIBS; fi)"
           },
           "include_dirs": [
             "<(PY_INCLUDE)"
