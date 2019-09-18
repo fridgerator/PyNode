@@ -146,5 +146,11 @@ describe('nodePython', () => {
         expect(nodePython.call('merge_two_dicts', x, y)).to.deep.equal({ hey: 'guys', other: 1 })
       })
     })
+
+    describe('stopInterpreter', () => {
+      it('should stop the interpreter', () => {
+        nodePython.stopInterpreter()
+      })
+    })
   })
 })

@@ -142,6 +142,17 @@ void StartInterpreter(const Nan::FunctionCallbackInfo<v8::Value> &args)
   Py_Initialize();
 }
 
+void StopInterpreter(const Nan::FunctionCallbackInfo<v8::Value> &args)
+{
+  auto x = Py_IsInitialized();
+  fprintf(stderr, "Is initialized: %d\n", x);
+  Py_Finalize();
+  Py_DECREF(pModule);
+  pModule = NULL;
+  auto t = Py_IsInitialized();
+  fprintf(stderr, "Is initialized: %d\n", t);
+}
+
 void AppendSysPath(const Nan::FunctionCallbackInfo<v8::Value> &args)
 {
   if (args.Length() == 0 || !args[0]->IsString()) {
@@ -209,6 +220,10 @@ void Initialize(v8::Local<v8::Object> exports)
   exports->Set(
       Nan::New("startInterpreter").ToLocalChecked(),
       Nan::New<v8::FunctionTemplate>(StartInterpreter)->GetFunction());
+
+  exports->Set(
+      Nan::New("stopInterpreter").ToLocalChecked(),
+      Nan::New<v8::FunctionTemplate>(StopInterpreter)->GetFunction());
 
   exports->Set(
       Nan::New("appendSysPath").ToLocalChecked(),
