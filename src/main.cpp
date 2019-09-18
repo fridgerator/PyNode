@@ -144,13 +144,11 @@ void StartInterpreter(const Nan::FunctionCallbackInfo<v8::Value> &args)
 
 void StopInterpreter(const Nan::FunctionCallbackInfo<v8::Value> &args)
 {
-  auto x = Py_IsInitialized();
-  fprintf(stderr, "Is initialized: %d\n", x);
+  auto isInitialized = Py_IsInitialized();
+  if (isInitialized == 0) return;
   Py_Finalize();
   Py_DECREF(pModule);
   pModule = NULL;
-  auto t = Py_IsInitialized();
-  fprintf(stderr, "Is initialized: %d\n", t);
 }
 
 void AppendSysPath(const Nan::FunctionCallbackInfo<v8::Value> &args)
@@ -238,4 +236,9 @@ void Initialize(v8::Local<v8::Object> exports)
       Nan::New<v8::FunctionTemplate>(Eval)->GetFunction());
 }
 
-NODE_MODULE(addon, Initialize);
+extern "C" NODE_MODULE_EXPORT void
+NODE_MODULE_INITIALIZER(v8::Local<v8::Object> exports,
+                        v8::Local<v8::Value> module,
+                        v8::Local<v8::Context> context) {
+  Initialize(exports);
+}
