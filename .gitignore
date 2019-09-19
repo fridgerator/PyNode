@@ -4,3 +4,4 @@
 /.vscode
 __pycache__
 env.sh
+*.log

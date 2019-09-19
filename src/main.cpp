@@ -142,6 +142,15 @@ void StartInterpreter(const Nan::FunctionCallbackInfo<v8::Value> &args)
   Py_Initialize();
 }
 
+void StopInterpreter(const Nan::FunctionCallbackInfo<v8::Value> &args)
+{
+  auto isInitialized = Py_IsInitialized();
+  if (isInitialized == 0) return;
+  Py_Finalize();
+  Py_DECREF(pModule);
+  pModule = NULL;
+}
+
 void AppendSysPath(const Nan::FunctionCallbackInfo<v8::Value> &args)
 {
   if (args.Length() == 0 || !args[0]->IsString()) {
@@ -211,6 +220,10 @@ void Initialize(v8::Local<v8::Object> exports)
       Nan::New<v8::FunctionTemplate>(StartInterpreter)->GetFunction());
 
   exports->Set(
+      Nan::New("stopInterpreter").ToLocalChecked(),
+      Nan::New<v8::FunctionTemplate>(StopInterpreter)->GetFunction());
+
+  exports->Set(
       Nan::New("appendSysPath").ToLocalChecked(),
       Nan::New<v8::FunctionTemplate>(AppendSysPath)->GetFunction());
 
@@ -223,4 +236,9 @@ void Initialize(v8::Local<v8::Object> exports)
       Nan::New<v8::FunctionTemplate>(Eval)->GetFunction());
 }
 
-NODE_MODULE(addon, Initialize);
+extern "C" NODE_MODULE_EXPORT void
+NODE_MODULE_INITIALIZER(v8::Local<v8::Object> exports,
+                        v8::Local<v8::Value> module,
+                        v8::Local<v8::Context> context) {
+  Initialize(exports);
+}

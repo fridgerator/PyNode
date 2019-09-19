@@ -13,6 +13,11 @@ declare module '@fridgerator/pynode' {
   export function startInterpreter(pythonpath?: string): void;
 
   /**
+   * Stops the Python interpreter
+   */
+  export function stopInterpreter(pythonpath?: string): void;
+
+  /**
    * Add an additional path as a python module search path
    *
    * @param path Path to append to python `sys.path`
