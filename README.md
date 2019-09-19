@@ -4,6 +4,8 @@
 	
 ### Call python code from node.js
 
+**Node v10 or above is required**
+
 **Only tested with python 3.6.x and python 3.7.x.  Probably wont work with Python 2.7**
 
 ## Installation
