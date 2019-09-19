@@ -14,114 +14,6 @@
 
 PyObject *pModule;
 
-void Call(const Nan::FunctionCallbackInfo<v8::Value> &args)
-{
-  if (args.Length() == 0 || !args[0]->IsString()) {
-    Nan::ThrowError("First argument to 'call' must be a string");
-    return;
-  }
-
-  PyObject *pFunc, *pValue;
-
-  Nan::Utf8String functionName(args[0]);
-  pFunc = PyObject_GetAttrString(pModule, *functionName);
-
-  if (pFunc && PyCallable_Check(pFunc))
-  {
-    const int pythonArgsCount = Py_GetNumArguments(pFunc);
-    const int passedArgsCount = args.Length() - 1;
-
-    // Check if the passed args length matches the python function args length
-    if (passedArgsCount != pythonArgsCount)
-    {
-      char *error;
-      size_t len = (size_t)snprintf(NULL, 0, "The function '%s' has %d arguments, %d were passed", *functionName, pythonArgsCount, passedArgsCount);
-      error = (char *)malloc(len + 1);
-      snprintf(error, len + 1, "The function '%s' has %d arguments, %d were passed", *functionName, pythonArgsCount, passedArgsCount);
-      Nan::ThrowError(error);
-      free(error);
-      return;
-    }
-
-    PyObject *pArgs = BuildPyArgs(args);
-    pValue = PyObject_CallObject(pFunc, pArgs);
-    Py_DECREF(pArgs);
-
-    // printf("return type : %s\n", pValue->ob_type->tp_name);
-
-    if (pValue != NULL)
-    {
-      if (strcmp(pValue->ob_type->tp_name, "NoneType") == 0)
-      {
-        args.GetReturnValue().Set(Nan::Null());
-      }
-      else if (strcmp(pValue->ob_type->tp_name, "bool") == 0)
-      {
-        // because booleans are subtypes of integers this check must
-        // come before PyLong_Check (ie, PyBool_Type is always a PyLong_Type but,
-        // a PyLong_Type is not necessarily a PyBool_Type)
-        bool b = PyObject_IsTrue(pValue);
-        args.GetReturnValue().Set(Nan::New(b));
-      }
-      else if (strcmp(pValue->ob_type->tp_name, "int") == 0)
-      {
-        double result = PyLong_AsDouble(pValue);
-        args.GetReturnValue().Set(Nan::New(result));
-      }
-      else if (strcmp(pValue->ob_type->tp_name, "float") == 0)
-      {
-        double result = PyFloat_AsDouble(pValue);
-        args.GetReturnValue().Set(Nan::New(result));
-      }
-      else if (strcmp(pValue->ob_type->tp_name, "bytes") == 0)
-      {
-        auto str = Nan::New(PyBytes_AsString(pValue)).ToLocalChecked();
-        args.GetReturnValue().Set(str);
-      }
-      else if (strcmp(pValue->ob_type->tp_name, "str") == 0)
-      {
-        auto str = Nan::New(PyUnicode_AsUTF8(pValue)).ToLocalChecked();
-        args.GetReturnValue().Set(str);
-      }
-      else if (strcmp(pValue->ob_type->tp_name, "list") == 0)
-      {
-        auto arr = BuildV8Array(pValue);
-        args.GetReturnValue().Set(arr);
-      }
-      else if (strcmp(pValue->ob_type->tp_name, "dict") == 0)
-      {
-        auto obj = BuildV8Dict(pValue);
-        args.GetReturnValue().Set(obj);
-      }
-      // else if (strcmp(pValue->ob_type->tp_name, "tuple") == 0)
-      // {
-      //   auto arr = BuildV8Array(pValue);
-      //   args.GetReturnValue().Set(arr);
-      // }
-      else
-      {
-        std::string errMsg = std::string("Unsupported type returned (") + pValue->ob_type->tp_name + std::string("), only pure Python types are supported.");
-        Py_DECREF(pValue);
-        return Nan::ThrowTypeError(Nan::New(errMsg).ToLocalChecked());
-      }
-      Py_DECREF(pValue);
-    }
-    // else
-    // {
-    //   Py_DECREF(pFunc);
-    //   PyErr_Print();
-    //   fprintf(stderr, "Call failed\n");
-    //   Nan::ThrowError("Function call failed");
-    // }
-  }
-  else
-  {
-    Py_DECREF(pFunc);
-    PyErr_Print();
-    Nan::ThrowError("Function call failed");
-  }
-}
-
 void DLOpen(const Nan::FunctionCallbackInfo<v8::Value> &args)
 {
   #ifdef _WIN32
@@ -215,11 +107,151 @@ void Eval(const Nan::FunctionCallbackInfo<v8::Value> &args)
   args.GetReturnValue().Set(Nan::New(response));
 }
 
+class CallWorker : public Nan::AsyncWorker {
+  public:
+    CallWorker(Nan::Callback *callback, PyObject *pyArgs, PyObject *pFunc)
+      : Nan::AsyncWorker(callback), pyArgs(pyArgs), pFunc(pFunc) {}
+    ~CallWorker() {}
+    
+    void Execute () {
+    }
+
+    void HandleErrorCallback () {
+      fprintf(stderr, "handle error\n");
+      Nan::HandleScope scope;
+
+      v8::Local<v8::Value> argv[] = {
+        v8::Exception::Error(Nan::New<v8::String>(ErrorMessage()).ToLocalChecked())
+      };
+
+      Nan::Call(callback->GetFunction(), Nan::GetCurrentContext()->Global(), 1, argv);
+    }
+
+
+    void HandleOKCallback () {
+      Nan::HandleScope scope;
+      PyObject *pValue = PyObject_CallObject(pFunc, pyArgs);
+      Py_DECREF(pyArgs);
+
+      v8::Local<v8::Value> argv[] = {
+        Nan::Null(),
+        Nan::Null()
+      };
+
+      if (pValue != NULL) {
+
+        if (strcmp(pValue->ob_type->tp_name, "NoneType") == 0)
+        {
+          // args.GetReturnValue().Set(Nan::Null());
+        }
+        else if (strcmp(pValue->ob_type->tp_name, "bool") == 0)
+        {
+          // because booleans are subtypes of integers this check must
+          // come before PyLong_Check (ie, PyBool_Type is always a PyLong_Type but,
+          // a PyLong_Type is not necessarily a PyBool_Type)
+          bool b = PyObject_IsTrue(pValue);
+          argv[1] = Nan::New(b);
+        }
+        else if (strcmp(pValue->ob_type->tp_name, "int") == 0)
+        {
+          double result = PyLong_AsDouble(pValue);
+          argv[1] = Nan::New(result);
+        }
+        else if (strcmp(pValue->ob_type->tp_name, "float") == 0)
+        {
+          double result = PyFloat_AsDouble(pValue);
+          argv[1] = Nan::New(result);
+        }
+        else if (strcmp(pValue->ob_type->tp_name, "bytes") == 0)
+        {
+          auto str = Nan::New(PyBytes_AsString(pValue)).ToLocalChecked();
+          argv[1] = str;
+        }
+        else if (strcmp(pValue->ob_type->tp_name, "str") == 0)
+        {
+          auto str = Nan::New(PyUnicode_AsUTF8(pValue)).ToLocalChecked();
+          argv[1] = str;
+        }
+        else if (strcmp(pValue->ob_type->tp_name, "list") == 0)
+        {
+          auto arr = BuildV8Array(pValue);
+          argv[1] = arr;
+        }
+        else if (strcmp(pValue->ob_type->tp_name, "dict") == 0)
+        {
+          auto obj = BuildV8Dict(pValue);
+          argv[1] = obj;
+        }
+        // else if (strcmp(pValue->ob_type->tp_name, "tuple") == 0)
+        // {
+        //   auto arr = BuildV8Array(pValue);
+        //   args.GetReturnValue().Set(arr);
+        // }
+        else
+        {
+          std::string errMsg = std::string("Unsupported type returned (") + pValue->ob_type->tp_name + std::string("), only pure Python types are supported.");
+          Py_DECREF(pValue);
+          argv[0] = Nan::Error(errMsg.c_str());
+        }
+
+        Py_DECREF(pValue);
+      } else {
+        Py_DecRef(pFunc);
+        PyErr_Print();
+        argv[0] = Nan::Error("Function call failed");
+      }
+
+      callback->Call(2, argv);
+    }
+  
+  private:
+    PyObject *pyArgs;
+    PyObject *pFunc;
+};
+
+NAN_METHOD(CallAsync) {
+  if (info.Length() == 0 || !info[0]->IsString()) {
+    Nan::ThrowError("First argument to 'call' must be a string");
+    return;
+  }
+
+  PyObject *pFunc, *pArgs;
+
+  Nan::Utf8String functionName(info[0]);
+  pFunc = PyObject_GetAttrString(pModule, *functionName);
+
+  if (pFunc && PyCallable_Check(pFunc))
+  {
+    const int pythonArgsCount = Py_GetNumArguments(pFunc);
+    const int passedArgsCount = info.Length() - 2;
+
+    // Check if the passed args length matches the python function args length
+    if (passedArgsCount != pythonArgsCount)
+    {
+      char *error;
+      size_t len = (size_t)snprintf(NULL, 0, "The function '%s' has %d arguments, %d were passed", *functionName, pythonArgsCount, passedArgsCount);
+      error = (char *)malloc(len + 1);
+      snprintf(error, len + 1, "The function '%s' has %d arguments, %d were passed", *functionName, pythonArgsCount, passedArgsCount);
+      Nan::ThrowError(error);
+      free(error);
+      return;
+    }
+
+    pArgs = BuildPyArgs(info);
+  }
+
+  Nan::AsyncQueueWorker(new CallWorker(
+    new Nan::Callback(Nan::To<v8::Function>(info[info.Length() - 1]).ToLocalChecked()),
+    pArgs,
+    pFunc
+  ));
+}
+
 void Initialize(v8::Local<v8::Object> exports)
 {
   exports->Set(
       Nan::New("call").ToLocalChecked(),
-      Nan::New<v8::FunctionTemplate>(Call)->GetFunction());
+      Nan::New<v8::FunctionTemplate>(CallAsync)->GetFunction());
 
   exports->Set(
       Nan::New("dlOpen").ToLocalChecked(),
