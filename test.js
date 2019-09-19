@@ -99,7 +99,7 @@ describe('nodePython', () => {
     })
 
     describe('tuples', () => {
-      it('should return an array when a tuple is returned from python', () => {
+      it.skip('should return an array when a tuple is returned from python', () => {
         expect(nodePython.call('return_tuple')).to.deep.equal([1, 2, 3])
       })
     })

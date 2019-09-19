@@ -46,11 +46,11 @@ void Call(const Nan::FunctionCallbackInfo<v8::Value> &args)
 
     if (pValue != NULL)
     {
-      if (pValue == Py_None)
+      if (strcmp(pValue->ob_type->tp_name, "NoneType") == 0)
       {
         args.GetReturnValue().Set(Nan::Null());
       }
-      else if (PyBool_Check(pValue))
+      else if (strcmp(pValue->ob_type->tp_name, "bool") == 0)
       {
         // because booleans are subtypes of integers this check must
         // come before PyLong_Check (ie, PyBool_Type is always a PyLong_Type but,
@@ -58,36 +58,41 @@ void Call(const Nan::FunctionCallbackInfo<v8::Value> &args)
         bool b = PyObject_IsTrue(pValue);
         args.GetReturnValue().Set(Nan::New(b));
       }
-      else if (PyLong_Check(pValue))
+      else if (strcmp(pValue->ob_type->tp_name, "int") == 0)
       {
         double result = PyLong_AsDouble(pValue);
         args.GetReturnValue().Set(Nan::New(result));
       }
-      else if (PyFloat_Check(pValue))
+      else if (strcmp(pValue->ob_type->tp_name, "float") == 0)
       {
         double result = PyFloat_AsDouble(pValue);
         args.GetReturnValue().Set(Nan::New(result));
       }
-      else if (PyBytes_Check(pValue))
+      else if (strcmp(pValue->ob_type->tp_name, "bytes") == 0)
       {
         auto str = Nan::New(PyBytes_AsString(pValue)).ToLocalChecked();
         args.GetReturnValue().Set(str);
       }
-      else if (PyUnicode_Check(pValue))
+      else if (strcmp(pValue->ob_type->tp_name, "str") == 0)
       {
         auto str = Nan::New(PyUnicode_AsUTF8(pValue)).ToLocalChecked();
         args.GetReturnValue().Set(str);
       }
-      else if (PyList_Check(pValue) || PyTuple_Check(pValue))
+      else if (strcmp(pValue->ob_type->tp_name, "list") == 0)
       {
         auto arr = BuildV8Array(pValue);
         args.GetReturnValue().Set(arr);
       }
-      else if (PyDict_Check(pValue))
+      else if (strcmp(pValue->ob_type->tp_name, "dict") == 0)
       {
         auto obj = BuildV8Dict(pValue);
         args.GetReturnValue().Set(obj);
-      } 
+      }
+      // else if (strcmp(pValue->ob_type->tp_name, "tuple") == 0)
+      // {
+      //   auto arr = BuildV8Array(pValue);
+      //   args.GetReturnValue().Set(arr);
+      // }
       else
       {
         std::string errMsg = std::string("Unsupported type returned (") + pValue->ob_type->tp_name + std::string("), only pure Python types are supported.");
