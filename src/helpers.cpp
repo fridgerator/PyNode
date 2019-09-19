@@ -204,45 +204,50 @@ PyObject *BuildPyArgs(const Nan::FunctionCallbackInfo<v8::Value> &args)
  */
 v8::Local<v8::Array> BuildV8Array(PyObject *obj)
 {
-  Py_ssize_t len = PyList_Check(obj) ? PyList_Size(obj) : PyTuple_Size(obj);
+  Py_ssize_t len = PyList_Size(obj);
 
   v8::Local<v8::Array> arr = Nan::New<v8::Array>(len);
   for (Py_ssize_t i = 0; i < len; i++)
   {
-    PyObject *localObj = PyList_Check(obj) ? PyList_GetItem(obj, i) : PyTuple_GetItem(obj, i);
+    PyObject *localObj;
+    if (strcmp(obj->ob_type->tp_name, "list") == 0) {
+      localObj = PyList_GetItem(obj, i);
+    } else {
+      localObj = PyTuple_GetItem(obj, i);
+    }
     if (!localObj)
       continue;
-    if (PyLong_Check(localObj))
+    if (strcmp(localObj->ob_type->tp_name, "int") == 0)
     {
       double result = PyLong_AsDouble(localObj);
       arr->Set(i, Nan::New(result));
     }
-    else if (PyUnicode_Check(localObj))
+    else if (strcmp(localObj->ob_type->tp_name, "str") == 0)
     {
       auto str = Nan::New(PyUnicode_AsUTF8(localObj)).ToLocalChecked();
       arr->Set(i, str);
     }
-    else if (PyFloat_Check(localObj))
+    else if (strcmp(localObj->ob_type->tp_name, "float") == 0)
     {
       double result = PyFloat_AsDouble(localObj);
       arr->Set(i, Nan::New(result));
     }
-    else if (PyBytes_Check(localObj))
+    else if (strcmp(localObj->ob_type->tp_name, "bytes") == 0)
     {
       auto str = Nan::New(PyBytes_AsString(localObj)).ToLocalChecked();
       arr->Set(i, str);
     }
-    else if (PyBool_Check(localObj))
+    else if (strcmp(localObj->ob_type->tp_name, "bool") == 0)
     {
       bool b = PyObject_IsTrue(localObj);
       arr->Set(i, Nan::New(b));
     }
-    else if (PyList_Check(localObj) || PyTuple_Check(localObj))
+    else if (strcmp(localObj->ob_type->tp_name, "list") == 0)
     {
       auto innerArr = BuildV8Array(localObj);
       arr->Set(i, innerArr);
     }
-    else if (PyDict_Check(localObj))
+    else if (strcmp(localObj->ob_type->tp_name, "dict") == 0)
     {
       auto innerDict = BuildV8Dict(localObj);
       arr->Set(i, innerDict);
@@ -251,11 +256,11 @@ v8::Local<v8::Array> BuildV8Array(PyObject *obj)
   return arr;
 }
 
-char * getKey(PyObject *key) {
-  if (PyUnicode_Check(key)) {
-    return PyUnicode_AsUTF8(key);
+std::string getKey(PyObject *key) {
+  if (strcmp(key->ob_type->tp_name, "str") == 0) {
+    return std::string(PyUnicode_AsUTF8(key));
   } else {
-    return PyBytes_AsString(key);
+    return std::string(PyBytes_AsString(key));
   }
 }
 
@@ -269,37 +274,37 @@ v8::Local<v8::Object> BuildV8Dict(PyObject *obj)
     auto key = PyList_GetItem(keys, i);
     auto val = PyDict_GetItem(obj, key);
     auto jsKey = Nan::New(getKey(key)).ToLocalChecked();
-    if (PyLong_Check(val))
+    if (strcmp(val->ob_type->tp_name, "int") == 0)
     {
       double result = PyLong_AsDouble(val);
       jsObj->Set(jsKey, Nan::New(result));
     }
-    else if (PyUnicode_Check(val))
+    else if (strcmp(val->ob_type->tp_name, "str") == 0)
     {
       auto str = Nan::New(PyUnicode_AsUTF8(val)).ToLocalChecked();
       jsObj->Set(jsKey, str);
     }
-    else if (PyFloat_Check(val))
+    else if (strcmp(val->ob_type->tp_name, "float") == 0)
     {
       double result = PyFloat_AsDouble(val);
       jsObj->Set(jsKey, Nan::New(result));
     }
-    else if (PyBytes_Check(val))
+    else if (strcmp(val->ob_type->tp_name, "bytes") == 0)
     {
       auto str = Nan::New(PyBytes_AsString(val)).ToLocalChecked();
       jsObj->Set(jsKey, str);
     }
-    else if (PyBool_Check(val))
+    else if (strcmp(val->ob_type->tp_name, "bool") == 0)
     {
       bool b = PyObject_IsTrue(val);
       jsObj->Set(jsKey, Nan::New(b));
     }
-    else if (PyList_Check(val) || PyTuple_Check(val))
+    else if (strcmp(val->ob_type->tp_name, "list") == 0)
     {
       auto innerArr = BuildV8Array(val);
       jsObj->Set(jsKey, innerArr);
     }
-    else if (PyDict_Check(val))
+    else if (strcmp(val->ob_type->tp_name, "dict") == 0)
     {
       auto innerDict = BuildV8Dict(val);
       jsObj->Set(jsKey, innerDict);
