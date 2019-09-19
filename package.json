@@ -24,5 +24,8 @@
     "node-gyp": "^5.0.0"
   },
   "gypfile": true,
-  "types": "index.d.ts"
+  "types": "index.d.ts",
+  "engines": {
+    "node": ">=10"
+  }
 }
