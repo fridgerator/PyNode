@@ -1,6 +1,6 @@
 #include "helpers.h"
 
-PyObject *BuildPyDict(v8::Local<v8::Value> arg, v8::Isolate *isolate)
+PyObject *BuildPyDict(v8::Local<v8::Value> arg)
 {
   auto obj = arg.As<v8::Object>();
   auto keys = obj->GetOwnPropertyNames();
@@ -13,7 +13,7 @@ PyObject *BuildPyDict(v8::Local<v8::Value> arg, v8::Isolate *isolate)
     PyObject *pyKey = PyBytes_FromString(*keyStr);
     if (val->IsNumber())
     {
-      double num = val->NumberValue(isolate->GetCurrentContext()).FromJust();
+      double num = val->NumberValue(Nan::GetCurrentContext()).FromJust();
       if (val->IsInt32())
       {
         PyDict_SetItem(dict, pyKey, PyLong_FromLong(num));
@@ -52,12 +52,12 @@ PyObject *BuildPyDict(v8::Local<v8::Value> arg, v8::Isolate *isolate)
     }
     else if (val->IsArray())
     {
-      PyObject *innerList = BuildPyArray(val, isolate);
+      PyObject *innerList = BuildPyArray(val);
       PyDict_SetItem(dict, pyKey, innerList);
     }
     else if (val->IsObject())
     {
-      PyObject *innerDict = BuildPyDict(val, isolate);
+      PyObject *innerDict = BuildPyDict(val);
       PyDict_SetItem(dict, pyKey, innerDict);
     }
     else if (val->IsUint32())
@@ -68,7 +68,7 @@ PyObject *BuildPyDict(v8::Local<v8::Value> arg, v8::Isolate *isolate)
   return dict;
 }
 
-PyObject *BuildPyArray(v8::Local<v8::Value> arg, v8::Isolate *isolate)
+PyObject *BuildPyArray(v8::Local<v8::Value> arg)
 {
   v8::Local<v8::Array> arr = v8::Local<v8::Array>::Cast(arg);
   PyObject *list = PyList_New(arr->Length());
@@ -78,7 +78,7 @@ PyObject *BuildPyArray(v8::Local<v8::Value> arg, v8::Isolate *isolate)
     auto element = arr->Get(i);
     if (element->IsNumber())
     {
-      double num = element->NumberValue(isolate->GetCurrentContext()).FromJust();
+      double num = element->NumberValue(Nan::GetCurrentContext()).FromJust();
       if (element->IsInt32())
       {
         PyList_SetItem(list, i, PyLong_FromLong(num));
@@ -117,12 +117,12 @@ PyObject *BuildPyArray(v8::Local<v8::Value> arg, v8::Isolate *isolate)
     }
     else if (element->IsArray())
     {
-      PyObject *innerList = BuildPyArray(element, isolate);
+      PyObject *innerList = BuildPyArray(element);
       PyList_SetItem(list, i, innerList);
     }
     else if (element->IsObject())
     {
-      PyObject *innerDict = BuildPyDict(element, isolate);
+      PyObject *innerDict = BuildPyDict(element);
       PyList_SetItem(list, i, innerDict);
     }
     else if (element->IsUint32())
@@ -136,14 +136,13 @@ PyObject *BuildPyArray(v8::Local<v8::Value> arg, v8::Isolate *isolate)
 
 PyObject *BuildPyArgs(const Nan::FunctionCallbackInfo<v8::Value> &args)
 {
-  v8::Isolate *isolate = args.GetIsolate();
   PyObject *pArgs = PyTuple_New(args.Length() - 1);
   for (int i = 1; i < args.Length(); i++)
   {
     auto arg = args[i];
     if (arg->IsNumber())
     {
-      double num = arg->NumberValue(isolate->GetCurrentContext()).FromJust();
+      double num = arg->NumberValue(Nan::GetCurrentContext()).FromJust();
       if (arg->IsInt32())
       {
         PyTuple_SetItem(pArgs, i - 1, PyLong_FromLong(num));
@@ -182,12 +181,12 @@ PyObject *BuildPyArgs(const Nan::FunctionCallbackInfo<v8::Value> &args)
     }
     else if (arg->IsArray())
     {
-      PyObject *list = BuildPyArray(arg, isolate);
+      PyObject *list = BuildPyArray(arg);
       PyTuple_SetItem(pArgs, i - 1, list);
     }
     else if (arg->IsObject())
     {
-      PyObject *dict = BuildPyDict(arg, isolate);
+      PyObject *dict = BuildPyDict(arg);
       PyTuple_SetItem(pArgs, i - 1, dict);
     }
     else if (arg->IsUint32())

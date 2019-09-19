@@ -5,8 +5,8 @@
 #include <nan.h>
 
 // v8 to Python
-PyObject *BuildPyArray(v8::Local<v8::Value> arg, v8::Isolate *isolate);
-PyObject *BuildPyDict(v8::Local<v8::Value> arg, v8::Isolate *isolate);
+PyObject *BuildPyArray(v8::Local<v8::Value> arg);
+PyObject *BuildPyDict(v8::Local<v8::Value> arg);
 PyObject *BuildPyArgs(const Nan::FunctionCallbackInfo<v8::Value> &args);
 
 // Python to v8
