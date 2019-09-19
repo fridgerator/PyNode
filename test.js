@@ -1,10 +1,15 @@
-const expect = require('chai').expect
+const chai = require('chai')
+const expect = chai.expect
+
 const nodePython = require('./build/Release/PyNode')
+const { promisify } = require('util')
 
 nodePython.dlOpen('libpython3.6m.so')
 nodePython.startInterpreter()
 nodePython.appendSysPath('./test_files')
 nodePython.openFile("tools")
+
+const call = promisify(nodePython.call)
 
 describe('nodePython', () => {
   describe('#eval', () => {
@@ -20,108 +25,190 @@ describe('nodePython', () => {
   })
 
   describe('#call', () => {
-    it('should return the time series data', () => {
-      let d = nodePython.call('time_series_data')
-      expect(typeof d[0][0]).to.equal('string')
-      expect(typeof d[0][1]).to.equal('number')
+    it('should return the time series data', done => {
+      call('time_series_data')
+        .then(result => {
+          expect(typeof result[0][0]).to.equal('string')
+          expect(typeof result[0][1]).to.equal('number')
+          done()
+        })
     })
 
-    it('should throw an exception with the wrong number of arguments', () => {
-      let fn = () => { nodePython.call('return_immediate', 9, 9, 9) }
-      expect(fn).to.throw(Error, "The function 'return_immediate' has 1 arguments, 3 were passed")
+    it('should throw an exception with the wrong number of arguments', done => {
+      call('return_immediate', 9, 9, 9)
+        .catch(e => {
+          expect(e.message).to.equal("The function 'return_immediate' has 1 arguments, 3 were passed")
+          done()
+        })
     })
 
-    it('should return the correct value when passing Int32', () => {
-      expect(nodePython.call('return_immediate', 2)).to.equal(2)
+    it('should return the correct value when passing Int32', done => {
+      call('return_immediate', 2)
+        .then(result => {
+          expect(result).to.equal(2)
+          done()
+        })
     })
 
-    it('should return the correct value when passing Float', () => {
-      expect(nodePython.call('return_immediate', 3.14)).to.equal(3.14)
+    it('should return the correct value when passing Float', done => {
+      call('return_immediate', 3.14)
+        .then(result => {
+          expect(result).to.equal(3.14)
+          done()
+        })
     })
 
-    it('should return the correct value when passing String', () => {
-      expect(nodePython.call('return_immediate', 'the string')).to.equal('the string')
+    it('should return the correct value when passing String', done => {
+      call('return_immediate', 'the string')
+        .then(result => {
+          expect(result).to.equal('the string')
+          done()
+        })
     })
 
-    it('should return the correct value when passing bool', () => {
-      expect(nodePython.call('return_immediate', true)).to.equal(true)
+    it('should return the correct value when passing bool', done => {
+      call('return_immediate', true)
+        .then(result => {
+          expect(result).to.equal(true)
+          done()
+        })
     })
 
-    it('should return the correct value when passing bool', () => {
-      expect(nodePython.call('return_immediate', false)).to.equal(false)
+    it('should return the correct value when passing bool', done => {
+      call('return_immediate', false)
+        .then(result => {
+          expect(result).to.equal(false)
+          done()
+        })
     })
 
-    it('should return null when python returns None', () => {
-      expect(nodePython.call('return_none')).to.equals(null)
+    it('should return null when python returns None', done => {
+      call('return_none')
+        .then(result => {
+          expect(result).to.equal(null)
+          done()
+        })
     })
 
-    it.skip('should return the correct value when passing Date', () => {
+    it.skip('should return the correct value when passing Date', done => {
       let d = new Date()
-      expect(nodePython.call('return_immediate', d)).to.equal(d)
+      call('return_immediate', d)
+        .then(result => {
+          expect(result).to.equal(d)
+          done()
+        })
     })
 
     describe('arrays', () => {
-      it('should return the correct value when passing an empty array', () => {
-        expect(nodePython.call('return_immediate', [])).to.deep.equal([])
+      it('should return the correct value when passing an empty array', done => {
+        call('return_immediate', [])
+          .then(result => {
+            expect(result).to.deep.equal([])
+            done()
+          })
       })
 
-      it('should return the correct value when passing an array of ints', () => {
-        expect(nodePython.call('return_immediate', [1, 2, 3])).to.deep.equal([1, 2, 3])
+      it('should return the correct value when passing an array of ints', done => {
+        call('return_immediate', [1, 2, 3])
+          .then(result => {
+            expect(result).to.deep.equal([1, 2, 3])
+            done()
+          })
       })
 
-      it('should return the correct value when passing an array of strings', () => {
-        expect(nodePython.call('return_immediate', ['a', 'b', 'c'])).to.deep.equal(['a', 'b', 'c'])
+      it('should return the correct value when passing an array of strings', done => {
+        call('return_immediate', ['a', 'b', 'c'])
+          .then(result => {
+            expect(result).to.deep.equal(['a', 'b', 'c'])
+            done()
+          })
       })
 
-      it('should return the correct value when passing an array of mixed types', () => {
-        expect(nodePython.call('return_immediate', ['a', 1, 6.7777])).to.deep.equal(['a', 1, 6.7777])
+      it('should return the correct value when passing an array of mixed types', done => {
+        call('return_immediate', ['a', 1, 6.7777])
+          .then(result => {
+            expect(result).to.deep.equal(['a', 1, 6.7777])
+            done()
+          })
       })
 
-      it('should return the correct value when passing a nested array', () => {
+      it('should return the correct value when passing a nested array', done => {
         let x = [
           [1, 2, 3],
           ['a', 'b', 'c']
         ]
-        expect(nodePython.call('return_immediate', x)).to.deep.equal(x)
+        call('return_immediate', x)
+          .then(result => {
+            expect(result).to.deep.equal(x)
+            done()
+          })
       })
 
-      it('should return the correct value when passing arrays with objects', () => {
+      it('should return the correct value when passing arrays with objects', done => {
         let x = [
           { array: [1, 2, 3] },
           { string: 'ok', float: 8281.111 }
         ]
-        expect(nodePython.call('return_immediate', x)).to.deep.equal(x)
+        call('return_immediate', x)
+          .then(result => {
+            expect(result).to.deep.equal(x)
+            done()
+          })
       })
 
-      it('should return sum of numeric array input', () => {
-        expect(nodePython.call('sum_items', [1, 2, 3])).to.equals(6)
+      it('should return sum of numeric array input', done => {
+        call('sum_items', [1, 2, 3])
+          .then(result => {
+            expect(result).to.equals(6)
+            done()
+          })
       })
     })
 
     describe('tuples', () => {
-      it.skip('should return an array when a tuple is returned from python', () => {
-        expect(nodePython.call('return_tuple')).to.deep.equal([1, 2, 3])
+      it.skip('should return an array when a tuple is returned from python', done => {
+        call('return_tuple')
+          .then(result => {
+            expect(result).to.deep.equal([1, 2, 3])
+            done()
+          })
       })
     })
 
     describe('objects / dicts', () => {
-      it('should return an object from a python dict', () => {
-        expect(nodePython.call('return_dict')).to.deep.equal({'size': 71589, 'min': -99.6654762642, 'max': 879.08351843})
+      it('should return an object from a python dict', done => {
+        call('return_dict')
+          .then(result => {
+            expect(result).to.deep.equal({'size': 71589, 'min': -99.6654762642, 'max': 879.08351843})
+            done()
+          })
       })
 
-      it('should return the correct value when passing an object', () => {
-        expect(nodePython.call('return_immediate', {})).to.deep.equal({})
+      it('should return the correct value when passing an object', done => {
+        call('return_immediate', {})
+          .then(result => {
+            expect(result).to.deep.equal({})
+            done()
+          })
       })
 
-      it('should return the correct value when passing an object', () => {
-        expect(nodePython.call('return_immediate', { hey: 'guys' })).to.deep.equal({ hey: 'guys' })
+      it('should return the correct value when passing an object', done => {
+        call('return_immediate', { hey: 'guys' })
+          .then(result => {
+            expect(result).to.deep.equal({ hey: 'guys' })
+            done()
+          })
       })
 
-      it('should return the correct value when passing an object', () => {
-        expect(nodePython.call('return_immediate', { hey: 'guys', other: 1 })).to.deep.equal({ hey: 'guys', other: 1 })
+      it('should return the correct value when passing an object', done => {
+        call('return_immediate', { hey: 'guys', other: 1 })
+          .then(result => {
+            expect(result).to.deep.equal({ hey: 'guys', other: 1 })
+            done()
+          })
       })
 
-      it('should return the correct value when passing an object', () => {
+      it('should return the correct value when passing an object', done => {
         let crazyObj = {
           hey: [1, 2, 3],
           no: "yes",
@@ -133,24 +220,32 @@ describe('nodePython', () => {
             }
           }
         }
-        expect(nodePython.call('return_immediate', crazyObj)).to.deep.equal(crazyObj)
+        call('return_immediate', crazyObj)
+          .then(result => {
+            expect(result).to.deep.equal(crazyObj)
+            done()
+          })
       })
 
-      it('should merge two dicts', () => {
+      it('should merge two dicts', done => {
         let x = {
           hey: 'guys'
         }
         let y = {
           other: 1
         }
-        expect(nodePython.call('merge_two_dicts', x, y)).to.deep.equal({ hey: 'guys', other: 1 })
+        call('merge_two_dicts', x, y)
+          .then(result => {
+            expect(result).to.deep.equal({ hey: 'guys', other: 1 })
+            done()
+          })
       })
     })
+  })
 
-    describe('stopInterpreter', () => {
-      it('should stop the interpreter', () => {
-        nodePython.stopInterpreter()
-      })
+  describe('stopInterpreter', () => {
+    it('should stop the interpreter', () => {
+      nodePython.stopInterpreter()
     })
   })
 })

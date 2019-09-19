@@ -45,6 +45,8 @@ pynode.appendSysPath('./')
 pynode.openFile('test')
 
 // call the python function and get a return value
-let x = pynode.call('add', 1, 2)
-x === 3 // true
+pynode.call('add', 1, 2, (err, result) => {
+  if (err) return console.log('error : ', err)
+  result === 3 // true
+})
 ```

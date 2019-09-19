@@ -136,8 +136,9 @@ PyObject *BuildPyArray(v8::Local<v8::Value> arg)
 
 PyObject *BuildPyArgs(const Nan::FunctionCallbackInfo<v8::Value> &args)
 {
-  PyObject *pArgs = PyTuple_New(args.Length() - 1);
-  for (int i = 1; i < args.Length(); i++)
+  // Arguments length minus 2: one for function name, one for js callback
+  PyObject *pArgs = PyTuple_New(args.Length() - 2);
+  for (int i = 1; i < args.Length() - 1; i++)
   {
     auto arg = args[i];
     if (arg->IsNumber())
