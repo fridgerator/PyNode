@@ -16,9 +16,14 @@ PyObject *pModule;
 
 void Call(const Nan::FunctionCallbackInfo<v8::Value> &args)
 {
+  if (args.Length() == 0 || !args[0]->IsString()) {
+    Nan::ThrowError("First argument to 'call' must be a string");
+    return;
+  }
+
   PyObject *pFunc, *pValue;
 
-  v8::String::Utf8Value functionName(args[0]);
+  Nan::Utf8String functionName(args[0]);
   pFunc = PyObject_GetAttrString(pModule, *functionName);
 
   if (pFunc && PyCallable_Check(pFunc))
@@ -129,7 +134,7 @@ void DLOpen(const Nan::FunctionCallbackInfo<v8::Value> &args)
     return;
   }
 
-  v8::String::Utf8Value dlFile(args[0]);
+  Nan::Utf8String dlFile(args[0]);
   #ifndef _WIN32
   dlopen(*dlFile, RTLD_LAZY | RTLD_GLOBAL);
   #endif
@@ -138,7 +143,7 @@ void DLOpen(const Nan::FunctionCallbackInfo<v8::Value> &args)
 void StartInterpreter(const Nan::FunctionCallbackInfo<v8::Value> &args)
 {
   if (args.Length() == 1 && args[0]->IsString()) {
-    v8::String::Utf8Value pathString(args[0]);
+    Nan::Utf8String pathString(args[0]);
     std::wstring path(pathString.length(), L'#');
     mbstowcs(&path[0], *pathString, pathString.length());
     Py_SetPath(path.c_str());
@@ -163,7 +168,7 @@ void AppendSysPath(const Nan::FunctionCallbackInfo<v8::Value> &args)
     return;
   }
 
-  v8::String::Utf8Value pathName(args[0]);
+  Nan::Utf8String pathName(args[0]);
 
   char *appendPathStr;
   size_t len = (size_t)snprintf(NULL, 0, "import sys;sys.path.append(r\"%s\")", *pathName);
@@ -181,7 +186,7 @@ void OpenFile(const Nan::FunctionCallbackInfo<v8::Value> &args)
     return;
   }
 
-  v8::String::Utf8Value fileName(args[0]);
+  Nan::Utf8String fileName(args[0]);
 
   PyObject *pName;
   pName = PyUnicode_DecodeFSDefault(*fileName);
@@ -205,7 +210,7 @@ void Eval(const Nan::FunctionCallbackInfo<v8::Value> &args)
     return;
   }
 
-  v8::String::Utf8Value statement(args[0]);
+  Nan::Utf8String statement(args[0]);
   int response = PyRun_SimpleString(*statement);
   args.GetReturnValue().Set(Nan::New(response));
 }
