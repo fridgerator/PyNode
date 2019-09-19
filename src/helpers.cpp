@@ -251,11 +251,11 @@ v8::Local<v8::Array> BuildV8Array(PyObject *obj)
   return arr;
 }
 
-char * getKey(PyObject *key) {
+std::string getKey(PyObject *key) {
   if (PyUnicode_Check(key)) {
-    return PyUnicode_AsUTF8(key);
+    return std::string(PyUnicode_AsUTF8(key));
   } else {
-    return PyBytes_AsString(key);
+    return std::string(PyBytes_AsString(key));
   }
 }
 
