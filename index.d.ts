@@ -49,7 +49,7 @@ declare module '@fridgerator/pynode' {
    * let x = pynode.call('add', 1, 2)
    * x === 3 // true
    */
-  export function call(functionName: string, ...args: any[], callback: (err: any, result: any) => void): void;
+  export function call(functionName: string, ...args: any[]): void;
   namespace call {
     function __promisify__(functionName: string, ...args: any[]): Promise<any>;
   }
