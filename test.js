@@ -25,6 +25,17 @@ describe('nodePython', () => {
   })
 
   describe('#call', () => {
+    it('should return the stack trace', done => {
+      call('causes_runtime_error')
+        .then(result => console.log('should not see this : ', result))
+        .catch(err => {
+          expect(err.message.includes('tools.py')).to.equal(true)
+          expect(err.message.includes('in causes_runtime_error')).to.equal(true)
+          expect(err.message.includes('name \'secon\' is not defined')).to.equal(true)
+          done()
+        })
+    })
+
     it('should return the time series data', done => {
       call('time_series_data')
         .then(result => {
