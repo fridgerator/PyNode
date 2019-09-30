@@ -38,3 +38,8 @@ def return_dict():
 def return_tuple():
   x = (1, 2, 3)
   return x
+
+def causes_runtime_error():
+  first = 1
+  second = 2
+  return first + secon

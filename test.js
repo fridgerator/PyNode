@@ -25,6 +25,15 @@ describe('nodePython', () => {
   })
 
   describe('#call', () => {
+    it('should return the stack trace', done => {
+      call('causes_runtime_error')
+        .then(result => console.log('should not see this : ', result))
+        .catch(err => {
+          console.log('err : ', err)
+          done()
+        })
+    })
+
     it('should return the time series data', done => {
       call('time_series_data')
         .then(result => {
