@@ -1,4 +1,6 @@
+#include <sstream>
 #include <Python.h>
+#include <frameobject.h>
 // #include <datetime.h>
 #ifdef COMPILER
 #undef COMPILER
@@ -196,30 +198,41 @@ class CallWorker : public Nan::AsyncWorker {
 
         Py_DECREF(pValue);
       } else {
-        printf("got exception\n");
-        // PyErr_Print();
-        // PyObject *err = PyException_GetTraceback(pModule);
-        // printf("err type : %s\n", err->ob_type->tp_name);
+        std::string error;
+        PyObject * errOccurred = PyErr_Occurred();
+        if (errOccurred != NULL) {
+          PyObject *pType, *pValue, *pTraceback, *pTypeString;
+          PyErr_Fetch(&pType, &pValue, &pTraceback);
+          const char * value = PyUnicode_AsUTF8(pValue);
+          pTypeString = PyObject_Str(pType);
+          const char * type = PyUnicode_AsUTF8(pTypeString);
 
-        PyObject *type, *value, *traceback, *pystr;
-        PyErr_Fetch(&type, &value, &traceback);
-        const char * e = PyUnicode_AsUTF8(value);
-        printf("single line: %s\n", e);
+          PyTracebackObject * tb = (PyTracebackObject *)pTraceback;
+          std::ostringstream stream;
+          _frame * frame = tb->tb_frame;
+          
+          while (frame != NULL) {
+            int line = PyCode_Addr2Line(frame->f_code, frame->f_lasti);
+            const char * filename = PyUnicode_AsUTF8(frame->f_code->co_filename);
+            const char * funcname = PyUnicode_AsUTF8(frame->f_code->co_name);
+            stream << "File \"" << filename << "\", line " << line << ", in " << funcname << "\n";
+            stream << type << ": " << value;
+            frame = frame->f_back;
+          }
 
-        // PyTracebackObject * tb = (PyTracebackObject *)traceback;
-        // printf("tb: %d\n", tb->tb_frame);
-        // _frame *_traceback::tb_frame
-        // _frame _traceback::tb_frame = tb->tb_frame;
-        
-        // PyObject* pRepr = PyObject_Repr(traceback);
-        // const char * t = PyUnicode_AsUTF8(pRepr);
-        // printf("tb : %s\n", t);
+          error.append(stream.str());
 
-        
+          Py_DecRef(errOccurred);
+          Py_DecRef(pTypeString);
+          PyErr_Restore(pType, pValue, pTraceback);
+        } else {
+          error.append("Function call failed");
+        }
 
         Py_DecRef(pFunc);
+        PyErr_Print();
         
-        argv[0] = Nan::Error(e);
+        argv[0] = Nan::Error(error.c_str());
       }
 
       callback->Call(2, argv);
