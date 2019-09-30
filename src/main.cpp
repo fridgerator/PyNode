@@ -281,38 +281,6 @@ NAN_METHOD(CallAsync) {
   ));
 }
 
-NAN_METHOD(Stream) {
-  if (info.Length() == 0 || !info[0]->IsString()) {
-    Nan::ThrowError("First argument to 'call' must be a string");
-    return;
-  }
-
-  PyObject *pFunc, *pArgs;
-
-  Nan::Utf8String functionName(info[0]);
-  pFunc = PyObject_GetAttrString(pModule, *functionName);
-
-  if (pFunc && PyCallable_Check(pFunc))
-  {
-    const int pythonArgsCount = Py_GetNumArguments(pFunc);
-    const int passedArgsCount = info.Length() - 2;
-
-    // Check if the passed args length matches the python function args length
-    if (passedArgsCount != pythonArgsCount)
-    {
-      char *error;
-      size_t len = (size_t)snprintf(NULL, 0, "The function '%s' has %d arguments, %d were passed", *functionName, pythonArgsCount, passedArgsCount);
-      error = (char *)malloc(len + 1);
-      snprintf(error, len + 1, "The function '%s' has %d arguments, %d were passed", *functionName, pythonArgsCount, passedArgsCount);
-      Nan::ThrowError(error);
-      free(error);
-      return;
-    }
-
-    pArgs = BuildPyArgs(info);
-  }
-}
-
 void Initialize(v8::Local<v8::Object> exports)
 {
   exports->Set(
@@ -342,10 +310,6 @@ void Initialize(v8::Local<v8::Object> exports)
   exports->Set(
       Nan::New("eval").ToLocalChecked(),
       Nan::New<v8::FunctionTemplate>(Eval)->GetFunction());
-    
-  exports->Set(
-    Nan::New("stream").ToLocalChecked(),
-    Nan::New<v8::FunctionTemplate>(Stream)->GetFunction());
 }
 
 extern "C" NODE_MODULE_EXPORT void
