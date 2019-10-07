@@ -16,7 +16,7 @@
 
 PyObject *pModule;
 
-void DLOpen(const Nan::FunctionCallbackInfo<v8::Value> &args)
+void dlOpen(const Nan::FunctionCallbackInfo<v8::Value> &args)
 {
   #ifdef _WIN32
     Nan::ThrowError("dlOpen does not work in windows");
@@ -34,7 +34,7 @@ void DLOpen(const Nan::FunctionCallbackInfo<v8::Value> &args)
   #endif
 }
 
-void StartInterpreter(const Nan::FunctionCallbackInfo<v8::Value> &args)
+void startInterpreter(const Nan::FunctionCallbackInfo<v8::Value> &args)
 {
   if (args.Length() == 1 && args[0]->IsString()) {
     Nan::Utf8String pathString(args[0]);
@@ -46,7 +46,7 @@ void StartInterpreter(const Nan::FunctionCallbackInfo<v8::Value> &args)
   Py_Initialize();
 }
 
-void StopInterpreter(const Nan::FunctionCallbackInfo<v8::Value> &args)
+void stopInterpreter(const Nan::FunctionCallbackInfo<v8::Value> &args)
 {
   auto isInitialized = Py_IsInitialized();
   if (isInitialized == 0) return;
@@ -55,7 +55,7 @@ void StopInterpreter(const Nan::FunctionCallbackInfo<v8::Value> &args)
   pModule = NULL;
 }
 
-void AppendSysPath(const Nan::FunctionCallbackInfo<v8::Value> &args)
+void appendSysPath(const Nan::FunctionCallbackInfo<v8::Value> &args)
 {
   if (args.Length() == 0 || !args[0]->IsString()) {
     Nan::ThrowError("Must pass a string to 'appendSysPath'");
@@ -73,7 +73,7 @@ void AppendSysPath(const Nan::FunctionCallbackInfo<v8::Value> &args)
   free(appendPathStr);
 }
 
-void OpenFile(const Nan::FunctionCallbackInfo<v8::Value> &args)
+void openFile(const Nan::FunctionCallbackInfo<v8::Value> &args)
 {
   if (args.Length() == 0 || !args[0]->IsString()) {
     Nan::ThrowError("Must pass a string to 'openFile'");
@@ -97,7 +97,7 @@ void OpenFile(const Nan::FunctionCallbackInfo<v8::Value> &args)
   }
 }
 
-void Eval(const Nan::FunctionCallbackInfo<v8::Value> &args)
+void eval(const Nan::FunctionCallbackInfo<v8::Value> &args)
 {
   if (args.Length() == 0 || !args[0]->IsString()) {
     Nan::ThrowError("Must pass a string to 'eval'");
@@ -243,7 +243,7 @@ class CallWorker : public Nan::AsyncWorker {
     PyObject *pFunc;
 };
 
-NAN_METHOD(CallAsync) {
+NAN_METHOD(call) {
   if (info.Length() == 0 || !info[0]->IsString()) {
     Nan::ThrowError("First argument to 'call' must be a string");
     return;
@@ -283,33 +283,13 @@ NAN_METHOD(CallAsync) {
 
 void Initialize(v8::Local<v8::Object> exports)
 {
-  exports->Set(
-      Nan::New("call").ToLocalChecked(),
-      Nan::New<v8::FunctionTemplate>(CallAsync)->GetFunction());
-
-  exports->Set(
-      Nan::New("dlOpen").ToLocalChecked(),
-      Nan::New<v8::FunctionTemplate>(DLOpen)->GetFunction());
-
-  exports->Set(
-      Nan::New("startInterpreter").ToLocalChecked(),
-      Nan::New<v8::FunctionTemplate>(StartInterpreter)->GetFunction());
-
-  exports->Set(
-      Nan::New("stopInterpreter").ToLocalChecked(),
-      Nan::New<v8::FunctionTemplate>(StopInterpreter)->GetFunction());
-
-  exports->Set(
-      Nan::New("appendSysPath").ToLocalChecked(),
-      Nan::New<v8::FunctionTemplate>(AppendSysPath)->GetFunction());
-
-  exports->Set(
-      Nan::New("openFile").ToLocalChecked(),
-      Nan::New<v8::FunctionTemplate>(OpenFile)->GetFunction());
-
-  exports->Set(
-      Nan::New("eval").ToLocalChecked(),
-      Nan::New<v8::FunctionTemplate>(Eval)->GetFunction());
+  NAN_EXPORT(exports, call);
+  NAN_EXPORT(exports, dlOpen);
+  NAN_EXPORT(exports, startInterpreter);
+  NAN_EXPORT(exports, stopInterpreter);
+  NAN_EXPORT(exports, appendSysPath);
+  NAN_EXPORT(exports, openFile);
+  NAN_EXPORT(exports, eval);
 }
 
 extern "C" NODE_MODULE_EXPORT void
