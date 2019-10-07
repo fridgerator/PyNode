@@ -14,7 +14,24 @@
 
 #include "helpers.h"
 
-PyObject *pModule;
+class PyNodeData {
+  public:
+    PyNodeData(v8::Isolate* isolate, v8::Local<v8::Object> exports):
+      pModule(NULL) {
+        exports_.Reset(isolate, exports);
+        exports_.SetWeak(this, DeleteMe, v8::WeakCallbackType::kParameter);
+      }
+
+  PyObject *pModule;
+
+  private:
+    static void DeleteMe(const v8::WeakCallbackInfo<PyNodeData>& info) {
+      delete info.GetParameter();
+      fprintf(stderr, "delte me\n");
+    }
+
+    v8::Persistent<v8::Object> exports_;
+};
 
 void dlOpen(const Nan::FunctionCallbackInfo<v8::Value> &args)
 {
@@ -34,25 +51,29 @@ void dlOpen(const Nan::FunctionCallbackInfo<v8::Value> &args)
   #endif
 }
 
-void startInterpreter(const Nan::FunctionCallbackInfo<v8::Value> &args)
+void startInterpreter(const v8::FunctionCallbackInfo<v8::Value>& info)
 {
-  if (args.Length() == 1 && args[0]->IsString()) {
-    Nan::Utf8String pathString(args[0]);
+  if (info.Length() == 1 && info[0]->IsString()) {
+    Nan::Utf8String pathString(info[0]);
     std::wstring path(pathString.length(), L'#');
     mbstowcs(&path[0], *pathString, pathString.length());
-    Py_SetPath(path.c_str());
   }
 
-  Py_Initialize();
+  int isInitialized = Py_IsInitialized();
+
+  if (isInitialized == 0) Py_Initialize();
 }
 
-void stopInterpreter(const Nan::FunctionCallbackInfo<v8::Value> &args)
+void stopInterpreter(const v8::FunctionCallbackInfo<v8::Value>& info)
 {
+  PyNodeData* data =
+      reinterpret_cast<PyNodeData*>(info.Data().As<v8::External>()->Value());
+
   auto isInitialized = Py_IsInitialized();
   if (isInitialized == 0) return;
   Py_Finalize();
-  Py_DECREF(pModule);
-  pModule = NULL;
+  Py_DECREF(data->pModule);
+  data->pModule = NULL;
 }
 
 void appendSysPath(const Nan::FunctionCallbackInfo<v8::Value> &args)
@@ -69,32 +90,43 @@ void appendSysPath(const Nan::FunctionCallbackInfo<v8::Value> &args)
   appendPathStr = (char *)malloc(len + 1);
   snprintf(appendPathStr, len + 1, "import sys;sys.path.append(r\"%s\")", *pathName);
 
+  PyGILState_STATE gstate;
+  gstate = PyGILState_Ensure();
   PyRun_SimpleString(appendPathStr);
   free(appendPathStr);
+  PyGILState_Release(gstate);
 }
 
-void openFile(const Nan::FunctionCallbackInfo<v8::Value> &args)
+void openFile(const v8::FunctionCallbackInfo<v8::Value>& info)
 {
-  if (args.Length() == 0 || !args[0]->IsString()) {
+  if (info.Length() == 0 || !info[0]->IsString()) {
     Nan::ThrowError("Must pass a string to 'openFile'");
     return;
   }
 
-  Nan::Utf8String fileName(args[0]);
+  PyNodeData* data =
+      reinterpret_cast<PyNodeData*>(info.Data().As<v8::External>()->Value());
+
+  Nan::Utf8String fileName(info[0]);
+
+  PyGILState_STATE gstate;
+  gstate = PyGILState_Ensure();
 
   PyObject *pName;
   pName = PyUnicode_DecodeFSDefault(*fileName);
 
-  pModule = PyImport_Import(pName);
+  data->pModule = PyImport_Import(pName);
   Py_DECREF(pName);
 
-  if (pModule == NULL)
+  if (data->pModule == NULL)
   {
     PyErr_Print();
     fprintf(stderr, "Failed to load module: %s\n", *fileName);
     Nan::ThrowError("Failed to load python module");
     return;
   }
+
+  PyGILState_Release(gstate);
 }
 
 void eval(const Nan::FunctionCallbackInfo<v8::Value> &args)
@@ -111,8 +143,8 @@ void eval(const Nan::FunctionCallbackInfo<v8::Value> &args)
 
 class CallWorker : public Nan::AsyncWorker {
   public:
-    CallWorker(Nan::Callback *callback, PyObject *pyArgs, PyObject *pFunc)
-      : Nan::AsyncWorker(callback), pyArgs(pyArgs), pFunc(pFunc) {}
+    CallWorker(Nan::Callback *callback, PyObject *pyArgs, PyObject *pFunc, PyNodeData *data)
+      : Nan::AsyncWorker(callback), pyArgs(pyArgs), pFunc(pFunc), data(data) {}
     ~CallWorker() {}
     
     void Execute () {
@@ -132,6 +164,10 @@ class CallWorker : public Nan::AsyncWorker {
 
     void HandleOKCallback () {
       Nan::HandleScope scope;
+
+      PyGILState_STATE gstate;
+      gstate = PyGILState_Ensure();
+
       PyObject *pValue = PyObject_CallObject(pFunc, pyArgs);
       Py_DECREF(pyArgs);
 
@@ -235,26 +271,35 @@ class CallWorker : public Nan::AsyncWorker {
         argv[0] = Nan::Error(error.c_str());
       }
 
+      PyGILState_Release(gstate);
       callback->Call(2, argv);
     }
   
   private:
     PyObject *pyArgs;
     PyObject *pFunc;
+    PyNodeData *data;
 };
 
-NAN_METHOD(call) {
+void call(const v8::FunctionCallbackInfo<v8::Value>& info) {
   if (info.Length() == 0 || !info[0]->IsString()) {
     Nan::ThrowError("First argument to 'call' must be a string");
     return;
   }
 
+  PyGILState_STATE gstate;
+  gstate = PyGILState_Ensure();
+
+  PyNodeData* data =
+      reinterpret_cast<PyNodeData*>(info.Data().As<v8::External>()->Value());
+
   PyObject *pFunc, *pArgs;
 
   Nan::Utf8String functionName(info[0]);
-  pFunc = PyObject_GetAttrString(pModule, *functionName);
+  pFunc = PyObject_GetAttrString(data->pModule, *functionName);
+  int callable = PyCallable_Check(pFunc);
 
-  if (pFunc && PyCallable_Check(pFunc))
+  if (pFunc != NULL && callable == 1)
   {
     const int pythonArgsCount = Py_GetNumArguments(pFunc);
     const int passedArgsCount = info.Length() - 2;
@@ -272,29 +317,54 @@ NAN_METHOD(call) {
     }
 
     pArgs = BuildPyArgs(info);
+  } else {
+    Nan::ThrowError("Could not get function name / function not callable");
   }
 
   Nan::AsyncQueueWorker(new CallWorker(
     new Nan::Callback(Nan::To<v8::Function>(info[info.Length() - 1]).ToLocalChecked()),
     pArgs,
-    pFunc
+    pFunc,
+    data
   ));
-}
 
-void Initialize(v8::Local<v8::Object> exports)
-{
-  NAN_EXPORT(exports, call);
-  NAN_EXPORT(exports, dlOpen);
-  NAN_EXPORT(exports, startInterpreter);
-  NAN_EXPORT(exports, stopInterpreter);
-  NAN_EXPORT(exports, appendSysPath);
-  NAN_EXPORT(exports, openFile);
-  NAN_EXPORT(exports, eval);
+  PyGILState_Release(gstate);
 }
 
 extern "C" NODE_MODULE_EXPORT void
 NODE_MODULE_INITIALIZER(v8::Local<v8::Object> exports,
                         v8::Local<v8::Value> module,
                         v8::Local<v8::Context> context) {
-  Initialize(exports);
+  v8::Isolate* isolate = context->GetIsolate();
+
+  PyNodeData *data = new PyNodeData(isolate, exports);
+  v8::Local<v8::External> external = v8::External::New(isolate, data);
+
+  NAN_EXPORT(exports, dlOpen);
+  NAN_EXPORT(exports, appendSysPath);
+  NAN_EXPORT(exports, eval);
+
+  exports->Set(context,
+               v8::String::NewFromUtf8(isolate, "call", v8::NewStringType::kNormal)
+                  .ToLocalChecked(),
+               v8::FunctionTemplate::New(isolate, call, external)
+                  ->GetFunction(context).ToLocalChecked()).FromJust();
+
+  exports->Set(context,
+               v8::String::NewFromUtf8(isolate, "startInterpreter", v8::NewStringType::kNormal)
+                  .ToLocalChecked(),
+               v8::FunctionTemplate::New(isolate, startInterpreter, external)
+                  ->GetFunction(context).ToLocalChecked()).FromJust();
+
+  exports->Set(context,
+               v8::String::NewFromUtf8(isolate, "stopInterpreter", v8::NewStringType::kNormal)
+                  .ToLocalChecked(),
+               v8::FunctionTemplate::New(isolate, stopInterpreter, external)
+                  ->GetFunction(context).ToLocalChecked()).FromJust();
+  
+  exports->Set(context,
+               v8::String::NewFromUtf8(isolate, "openFile", v8::NewStringType::kNormal)
+                  .ToLocalChecked(),
+               v8::FunctionTemplate::New(isolate, openFile, external)
+                  ->GetFunction(context).ToLocalChecked()).FromJust();
 }

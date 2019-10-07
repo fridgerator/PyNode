@@ -7,7 +7,7 @@ const { promisify } = require('util')
 nodePython.dlOpen('libpython3.6m.so')
 nodePython.startInterpreter()
 nodePython.appendSysPath('./test_files')
-nodePython.openFile("tools")
+nodePython.openFile('tools')
 
 const call = promisify(nodePython.call)
 
