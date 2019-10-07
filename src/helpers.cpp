@@ -3,7 +3,7 @@
 PyObject *BuildPyDict(v8::Local<v8::Value> arg)
 {
   auto obj = arg.As<v8::Object>();
-  auto keys = obj->GetOwnPropertyNames();
+  auto keys = obj->GetOwnPropertyNames(Nan::GetCurrentContext()).ToLocalChecked();
   PyObject *dict = PyDict_New();
   for (unsigned int i = 0; i < keys->Length(); i++)
   {
@@ -30,7 +30,7 @@ PyObject *BuildPyDict(v8::Local<v8::Value> arg)
     }
     else if (val->IsBoolean())
     {
-      long b = val->BooleanValue();
+      long b = val->BooleanValue(Nan::GetCurrentContext()).FromJust();
       PyDict_SetItem(dict, pyKey, PyBool_FromLong(b));
     }
     else if (val->IsDate())
@@ -95,7 +95,7 @@ PyObject *BuildPyArray(v8::Local<v8::Value> arg)
     }
     else if (element->IsBoolean())
     {
-      long b = element->BooleanValue();
+      bool b = element->BooleanValue(Nan::GetCurrentContext()).FromJust();
       PyList_SetItem(list, i, PyBool_FromLong(b));
     }
     else if (element->IsDate())
@@ -160,7 +160,7 @@ PyObject *BuildPyArgs(const Nan::FunctionCallbackInfo<v8::Value> &args)
     }
     else if (arg->IsBoolean())
     {
-      long b = arg->BooleanValue();
+      long b = arg->BooleanValue(Nan::GetCurrentContext()).FromJust();
       PyTuple_SetItem(pArgs, i - 1, PyBool_FromLong(b));
     }
     else if (arg->IsDate())
