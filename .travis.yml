@@ -1,7 +1,8 @@
 dist: trusty
 language: node_js
 node_js:
-  - "10.16.1"
+  - '10'
+  - '12'
 before_install:
   - sudo rm -f /usr/local/bin/python-config
   - sudo ln -s /opt/python/3.6.3/bin/python3-config /usr/local/bin/python-config

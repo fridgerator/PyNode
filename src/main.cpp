@@ -243,7 +243,7 @@ class CallWorker : public Nan::AsyncWorker {
     PyObject *pFunc;
 };
 
-NAN_METHOD(callAsync) {
+NAN_METHOD(call) {
   if (info.Length() == 0 || !info[0]->IsString()) {
     Nan::ThrowError("First argument to 'call' must be a string");
     return;
@@ -283,40 +283,12 @@ NAN_METHOD(callAsync) {
 
 void Initialize(v8::Local<v8::Object> exports)
 {
-  // exports->Set(
-  //     Nan::New("call").ToLocalChecked(),
-  //     Nan::New<v8::FunctionTemplate>(CallAsync)->GetFunction());
-
-  NAN_EXPORT(exports, callAsync);
-
-  // exports->Set(
-  //     Nan::New("dlOpen").ToLocalChecked(),
-  //     Nan::New<v8::FunctionTemplate>(DLOpen)->GetFunction());
+  NAN_EXPORT(exports, call);
   NAN_EXPORT(exports, dlOpen);
-
-  // exports->Set(
-  //     Nan::New("startInterpreter").ToLocalChecked(),
-  //     Nan::New<v8::FunctionTemplate>(StartInterpreter)->GetFunction());
   NAN_EXPORT(exports, startInterpreter);
-
-  // exports->Set(
-  //     Nan::New("stopInterpreter").ToLocalChecked(),
-  //     Nan::New<v8::FunctionTemplate>(StopInterpreter)->GetFunction());
   NAN_EXPORT(exports, stopInterpreter);
-
-  // exports->Set(
-  //     Nan::New("appendSysPath").ToLocalChecked(),
-  //     Nan::New<v8::FunctionTemplate>(appendSysPath)->GetFunction());
   NAN_EXPORT(exports, appendSysPath);
-
-  // exports->Set(
-  //     Nan::New("openFile").ToLocalChecked(),
-  //     Nan::New<v8::FunctionTemplate>(OpenFile)->GetFunction());
   NAN_EXPORT(exports, openFile);
-
-  // exports->Set(
-  //     Nan::New("eval").ToLocalChecked(),
-  //     Nan::New<v8::FunctionTemplate>(Eval)->GetFunction());
   NAN_EXPORT(exports, eval);
 }
 
