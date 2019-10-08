@@ -27,7 +27,7 @@ class PyNodeData {
   private:
     static void DeleteMe(const v8::WeakCallbackInfo<PyNodeData>& info) {
       delete info.GetParameter();
-      fprintf(stderr, "delte me\n");
+      fprintf(stderr, "delete me\n");
     }
 
     v8::Persistent<v8::Object> exports_;

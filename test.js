@@ -4,7 +4,7 @@ const expect = chai.expect
 const nodePython = require('./build/Release/PyNode')
 const { promisify } = require('util')
 
-nodePython.dlOpen('libpython3.6m.so')
+if (process.platform === 'linux') nodePython.dlOpen('libpython3.6m.so')
 nodePython.startInterpreter()
 nodePython.appendSysPath('./test_files')
 nodePython.openFile('tools')
