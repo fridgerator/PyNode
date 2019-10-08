@@ -60,7 +60,6 @@ void startInterpreter(const v8::FunctionCallbackInfo<v8::Value>& info)
   }
 
   int isInitialized = Py_IsInitialized();
-
   if (isInitialized == 0) Py_Initialize();
 }
 
@@ -143,30 +142,30 @@ void eval(const Nan::FunctionCallbackInfo<v8::Value> &args)
 
 class CallWorker : public Nan::AsyncWorker {
   public:
-    CallWorker(Nan::Callback *callback, PyObject *pyArgs, PyObject *pFunc, PyNodeData *data)
-      : Nan::AsyncWorker(callback), pyArgs(pyArgs), pFunc(pFunc), data(data) {}
-    ~CallWorker() {}
+    CallWorker(Nan::Callback *callback, PyObject *pyArgs, PyObject *pFunc)
+      : Nan::AsyncWorker(callback), pyArgs(pyArgs), pFunc(pFunc) {
+        gstate = PyGILState_Ensure();
+      }
+    ~CallWorker() {
+      PyGILState_Release(gstate);
+    }
     
     void Execute () {
+      // Nan::HandleScope scope;
     }
 
     void HandleErrorCallback () {
-      fprintf(stderr, "handle error\n");
       Nan::HandleScope scope;
 
-      v8::Local<v8::Value> argv[] = {
+      v8::Local<v8::Value> err[] = {
         v8::Exception::Error(Nan::New<v8::String>(ErrorMessage()).ToLocalChecked())
       };
 
-      Nan::Call(callback->GetFunction(), Nan::GetCurrentContext()->Global(), 1, argv);
+      Nan::Call(callback->GetFunction(), Nan::GetCurrentContext()->Global(), 1, err);
     }
-
 
     void HandleOKCallback () {
       Nan::HandleScope scope;
-
-      PyGILState_STATE gstate;
-      gstate = PyGILState_Ensure();
 
       PyObject *pValue = PyObject_CallObject(pFunc, pyArgs);
       Py_DECREF(pyArgs);
@@ -271,14 +270,14 @@ class CallWorker : public Nan::AsyncWorker {
         argv[0] = Nan::Error(error.c_str());
       }
 
-      PyGILState_Release(gstate);
+      // PyGILState_Release(gstate);
       callback->Call(2, argv);
     }
   
   private:
     PyObject *pyArgs;
     PyObject *pFunc;
-    PyNodeData *data;
+    PyGILState_STATE gstate;
 };
 
 void call(const v8::FunctionCallbackInfo<v8::Value>& info) {
@@ -292,6 +291,8 @@ void call(const v8::FunctionCallbackInfo<v8::Value>& info) {
     return;
   }
 
+  Nan::Utf8String functionName(info[0]);
+
   PyGILState_STATE gstate;
   gstate = PyGILState_Ensure();
 
@@ -300,7 +301,6 @@ void call(const v8::FunctionCallbackInfo<v8::Value>& info) {
 
   PyObject *pFunc, *pArgs;
 
-  Nan::Utf8String functionName(info[0]);
   pFunc = PyObject_GetAttrString(data->pModule, *functionName);
   int callable = PyCallable_Check(pFunc);
 
@@ -323,17 +323,16 @@ void call(const v8::FunctionCallbackInfo<v8::Value>& info) {
 
     pArgs = BuildPyArgs(info);
   } else {
-    Nan::ThrowError("Could not get function name / function not callable");
+    Nan::ThrowError("Could not find function name / function not callable");
   }
+
+  PyGILState_Release(gstate);
 
   Nan::AsyncQueueWorker(new CallWorker(
     new Nan::Callback(Nan::To<v8::Function>(info[info.Length() - 1]).ToLocalChecked()),
     pArgs,
-    pFunc,
-    data
+    pFunc
   ));
-
-  PyGILState_Release(gstate);
 }
 
 extern "C" NODE_MODULE_EXPORT void
