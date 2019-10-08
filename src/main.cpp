@@ -287,6 +287,11 @@ void call(const v8::FunctionCallbackInfo<v8::Value>& info) {
     return;
   }
 
+  if (!info[info.Length() - 1]->IsFunction()) {
+    Nan::ThrowError("Last argument to 'call' must be a function");
+    return;
+  }
+
   PyGILState_STATE gstate;
   gstate = PyGILState_Ensure();
 
