@@ -81,6 +81,9 @@ void startInterpreter(const v8::FunctionCallbackInfo<v8::Value>& info)
 
   int isInitialized = Py_IsInitialized();
   if (isInitialized == 0) Py_Initialize();
+
+  int threadsInitialized = PyEval_ThreadsInitialized();
+  if (threadsInitialized == 0) PyEval_InitThreads();
 }
 
 void stopInterpreter(const v8::FunctionCallbackInfo<v8::Value>& info)
