@@ -1,4 +1,4 @@
-#include <mutex>
+// #include <mutex>
 #include <sstream>
 #include <Python.h>
 #include <frameobject.h>
@@ -20,7 +20,7 @@ class py_context
 public:
     py_context()
     {
-      std::unique_lock<std::mutex>(pyContextLock);
+      // std::unique_lock<std::mutex>(pyContextLock);
       gstate = PyGILState_Ensure();
     }
 
@@ -30,7 +30,7 @@ public:
     }
 
 private:
-    static std::mutex pyContextLock;
+    // static std::mutex pyContextLock;
     PyGILState_STATE gstate;
 };
 
