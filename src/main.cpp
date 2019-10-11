@@ -1,3 +1,4 @@
+#include <mutex>
 #include <sstream>
 #include <Python.h>
 #include <frameobject.h>
@@ -13,6 +14,24 @@
 #endif
 
 #include "helpers.h"
+
+class py_context
+{
+public:
+    py_context()
+    {
+      // std::unique_lock<std::mutex>(pyContextLock);
+      gstate = PyGILState_Ensure();
+    }
+
+    ~py_context()
+    {
+      PyGILState_Release(gstate);
+    }
+
+private:
+    PyGILState_STATE gstate;
+};
 
 class PyNodeData {
   public:
@@ -89,11 +108,14 @@ void appendSysPath(const Nan::FunctionCallbackInfo<v8::Value> &args)
   appendPathStr = (char *)malloc(len + 1);
   snprintf(appendPathStr, len + 1, "import sys;sys.path.append(r\"%s\")", *pathName);
 
-  PyGILState_STATE gstate;
-  gstate = PyGILState_Ensure();
-  PyRun_SimpleString(appendPathStr);
-  free(appendPathStr);
-  PyGILState_Release(gstate);
+  // PyGILState_STATE gstate;
+  // gstate = PyGILState_Ensure();
+  {
+    py_context ctx;
+    PyRun_SimpleString(appendPathStr);
+    free(appendPathStr);
+  }
+  // PyGILState_Release(gstate);
 }
 
 void openFile(const v8::FunctionCallbackInfo<v8::Value>& info)
@@ -108,24 +130,27 @@ void openFile(const v8::FunctionCallbackInfo<v8::Value>& info)
 
   Nan::Utf8String fileName(info[0]);
 
-  PyGILState_STATE gstate;
-  gstate = PyGILState_Ensure();
-
-  PyObject *pName;
-  pName = PyUnicode_DecodeFSDefault(*fileName);
-
-  data->pModule = PyImport_Import(pName);
-  Py_DECREF(pName);
-
-  if (data->pModule == NULL)
+  // PyGILState_STATE gstate;
+  // gstate = PyGILState_Ensure();
   {
-    PyErr_Print();
-    fprintf(stderr, "Failed to load module: %s\n", *fileName);
-    Nan::ThrowError("Failed to load python module");
-    return;
+    py_context ctx;
+
+    PyObject *pName;
+    pName = PyUnicode_DecodeFSDefault(*fileName);
+
+    data->pModule = PyImport_Import(pName);
+    Py_DECREF(pName);
+
+    if (data->pModule == NULL)
+    {
+      PyErr_Print();
+      fprintf(stderr, "Failed to load module: %s\n", *fileName);
+      Nan::ThrowError("Failed to load python module");
+      return;
+    }
   }
 
-  PyGILState_Release(gstate);
+  // PyGILState_Release(gstate);
 }
 
 void eval(const Nan::FunctionCallbackInfo<v8::Value> &args)
@@ -144,10 +169,10 @@ class CallWorker : public Nan::AsyncWorker {
   public:
     CallWorker(Nan::Callback *callback, PyObject *pyArgs, PyObject *pFunc)
       : Nan::AsyncWorker(callback), pyArgs(pyArgs), pFunc(pFunc) {
-        gstate = PyGILState_Ensure();
+        // gstate = PyGILState_Ensure();
       }
     ~CallWorker() {
-      PyGILState_Release(gstate);
+      // PyGILState_Release(gstate);
     }
     
     void Execute () {
@@ -167,107 +192,111 @@ class CallWorker : public Nan::AsyncWorker {
     void HandleOKCallback () {
       Nan::HandleScope scope;
 
-      PyObject *pValue = PyObject_CallObject(pFunc, pyArgs);
-      Py_DECREF(pyArgs);
-
       v8::Local<v8::Value> argv[] = {
         Nan::Null(),
         Nan::Null()
       };
 
-      if (pValue != NULL) {
+      {
+        py_context ctx;
 
-        if (strcmp(pValue->ob_type->tp_name, "NoneType") == 0)
-        {
-          // args.GetReturnValue().Set(Nan::Null());
-        }
-        else if (strcmp(pValue->ob_type->tp_name, "bool") == 0)
-        {
-          // because booleans are subtypes of integers this check must
-          // come before PyLong_Check (ie, PyBool_Type is always a PyLong_Type but,
-          // a PyLong_Type is not necessarily a PyBool_Type)
-          bool b = PyObject_IsTrue(pValue);
-          argv[1] = Nan::New(b);
-        }
-        else if (strcmp(pValue->ob_type->tp_name, "int") == 0)
-        {
-          double result = PyLong_AsDouble(pValue);
-          argv[1] = Nan::New(result);
-        }
-        else if (strcmp(pValue->ob_type->tp_name, "float") == 0)
-        {
-          double result = PyFloat_AsDouble(pValue);
-          argv[1] = Nan::New(result);
-        }
-        else if (strcmp(pValue->ob_type->tp_name, "bytes") == 0)
-        {
-          auto str = Nan::New(PyBytes_AsString(pValue)).ToLocalChecked();
-          argv[1] = str;
-        }
-        else if (strcmp(pValue->ob_type->tp_name, "str") == 0)
-        {
-          auto str = Nan::New(PyUnicode_AsUTF8(pValue)).ToLocalChecked();
-          argv[1] = str;
-        }
-        else if (strcmp(pValue->ob_type->tp_name, "list") == 0)
-        {
-          auto arr = BuildV8Array(pValue);
-          argv[1] = arr;
-        }
-        else if (strcmp(pValue->ob_type->tp_name, "dict") == 0)
-        {
-          auto obj = BuildV8Dict(pValue);
-          argv[1] = obj;
-        }
-        // else if (strcmp(pValue->ob_type->tp_name, "tuple") == 0)
-        // {
-        //   auto arr = BuildV8Array(pValue);
-        //   args.GetReturnValue().Set(arr);
-        // }
-        else
-        {
-          std::string errMsg = std::string("Unsupported type returned (") + pValue->ob_type->tp_name + std::string("), only pure Python types are supported.");
-          Py_DECREF(pValue);
-          argv[0] = Nan::Error(errMsg.c_str());
-        }
+        PyObject *pValue = PyObject_CallObject(pFunc, pyArgs);
+        Py_DECREF(pyArgs);
 
-        Py_DECREF(pValue);
-      } else {
-        std::string error;
-        PyObject * errOccurred = PyErr_Occurred();
-        if (errOccurred != NULL) {
-          PyObject *pType, *pValue, *pTraceback, *pTypeString;
-          PyErr_Fetch(&pType, &pValue, &pTraceback);
-          const char * value = PyUnicode_AsUTF8(pValue);
-          pTypeString = PyObject_Str(pType);
-          const char * type = PyUnicode_AsUTF8(pTypeString);
+        if (pValue != NULL) {
 
-          PyTracebackObject * tb = (PyTracebackObject *)pTraceback;
-          std::ostringstream stream;
-          _frame * frame = tb->tb_frame;
-          
-          while (frame != NULL) {
-            int line = PyCode_Addr2Line(frame->f_code, frame->f_lasti);
-            const char * filename = PyUnicode_AsUTF8(frame->f_code->co_filename);
-            const char * funcname = PyUnicode_AsUTF8(frame->f_code->co_name);
-            stream << "File \"" << filename << "\", line " << line << ", in " << funcname << "\n";
-            stream << type << ": " << value;
-            frame = frame->f_back;
+          if (strcmp(pValue->ob_type->tp_name, "NoneType") == 0)
+          {
+            // args.GetReturnValue().Set(Nan::Null());
+          }
+          else if (strcmp(pValue->ob_type->tp_name, "bool") == 0)
+          {
+            // because booleans are subtypes of integers this check must
+            // come before PyLong_Check (ie, PyBool_Type is always a PyLong_Type but,
+            // a PyLong_Type is not necessarily a PyBool_Type)
+            bool b = PyObject_IsTrue(pValue);
+            argv[1] = Nan::New(b);
+          }
+          else if (strcmp(pValue->ob_type->tp_name, "int") == 0)
+          {
+            double result = PyLong_AsDouble(pValue);
+            argv[1] = Nan::New(result);
+          }
+          else if (strcmp(pValue->ob_type->tp_name, "float") == 0)
+          {
+            double result = PyFloat_AsDouble(pValue);
+            argv[1] = Nan::New(result);
+          }
+          else if (strcmp(pValue->ob_type->tp_name, "bytes") == 0)
+          {
+            auto str = Nan::New(PyBytes_AsString(pValue)).ToLocalChecked();
+            argv[1] = str;
+          }
+          else if (strcmp(pValue->ob_type->tp_name, "str") == 0)
+          {
+            auto str = Nan::New(PyUnicode_AsUTF8(pValue)).ToLocalChecked();
+            argv[1] = str;
+          }
+          else if (strcmp(pValue->ob_type->tp_name, "list") == 0)
+          {
+            auto arr = BuildV8Array(pValue);
+            argv[1] = arr;
+          }
+          else if (strcmp(pValue->ob_type->tp_name, "dict") == 0)
+          {
+            auto obj = BuildV8Dict(pValue);
+            argv[1] = obj;
+          }
+          // else if (strcmp(pValue->ob_type->tp_name, "tuple") == 0)
+          // {
+          //   auto arr = BuildV8Array(pValue);
+          //   args.GetReturnValue().Set(arr);
+          // }
+          else
+          {
+            std::string errMsg = std::string("Unsupported type returned (") + pValue->ob_type->tp_name + std::string("), only pure Python types are supported.");
+            Py_DECREF(pValue);
+            argv[0] = Nan::Error(errMsg.c_str());
           }
 
-          error.append(stream.str());
-
-          Py_DecRef(errOccurred);
-          Py_DecRef(pTypeString);
-          PyErr_Restore(pType, pValue, pTraceback);
+          Py_DECREF(pValue);
         } else {
-          error.append("Function call failed");
-        }
+          std::string error;
+          PyObject * errOccurred = PyErr_Occurred();
+          if (errOccurred != NULL) {
+            PyObject *pType, *pValue, *pTraceback, *pTypeString;
+            PyErr_Fetch(&pType, &pValue, &pTraceback);
+            const char * value = PyUnicode_AsUTF8(pValue);
+            pTypeString = PyObject_Str(pType);
+            const char * type = PyUnicode_AsUTF8(pTypeString);
 
-        Py_DecRef(pFunc);
-        PyErr_Print();
-        
-        argv[0] = Nan::Error(error.c_str());
+            PyTracebackObject * tb = (PyTracebackObject *)pTraceback;
+            std::ostringstream stream;
+            _frame * frame = tb->tb_frame;
+            
+            while (frame != NULL) {
+              int line = PyCode_Addr2Line(frame->f_code, frame->f_lasti);
+              const char * filename = PyUnicode_AsUTF8(frame->f_code->co_filename);
+              const char * funcname = PyUnicode_AsUTF8(frame->f_code->co_name);
+              stream << "File \"" << filename << "\", line " << line << ", in " << funcname << "\n";
+              stream << type << ": " << value;
+              frame = frame->f_back;
+            }
+
+            error.append(stream.str());
+
+            Py_DecRef(errOccurred);
+            Py_DecRef(pTypeString);
+            PyErr_Restore(pType, pValue, pTraceback);
+          } else {
+            error.append("Function call failed");
+          }
+
+          Py_DecRef(pFunc);
+          PyErr_Print();
+          
+          argv[0] = Nan::Error(error.c_str());
+        }
       }
 
       // PyGILState_Release(gstate);
@@ -277,7 +306,7 @@ class CallWorker : public Nan::AsyncWorker {
   private:
     PyObject *pyArgs;
     PyObject *pFunc;
-    PyGILState_STATE gstate;
+    // PyGILState_STATE gstate;
 };
 
 void call(const v8::FunctionCallbackInfo<v8::Value>& info) {
@@ -293,40 +322,44 @@ void call(const v8::FunctionCallbackInfo<v8::Value>& info) {
 
   Nan::Utf8String functionName(info[0]);
 
-  PyGILState_STATE gstate;
-  gstate = PyGILState_Ensure();
+  // PyGILState_STATE gstate;
+  // gstate = PyGILState_Ensure();
 
   PyNodeData* data =
       reinterpret_cast<PyNodeData*>(info.Data().As<v8::External>()->Value());
 
   PyObject *pFunc, *pArgs;
 
-  pFunc = PyObject_GetAttrString(data->pModule, *functionName);
-  int callable = PyCallable_Check(pFunc);
-
-  if (pFunc != NULL && callable == 1)
   {
-    const int pythonArgsCount = Py_GetNumArguments(pFunc);
-    const int passedArgsCount = info.Length() - 2;
+    py_context ctx;
 
-    // Check if the passed args length matches the python function args length
-    if (passedArgsCount != pythonArgsCount)
+    pFunc = PyObject_GetAttrString(data->pModule, *functionName);
+    int callable = PyCallable_Check(pFunc);
+
+    if (pFunc != NULL && callable == 1)
     {
-      char *error;
-      size_t len = (size_t)snprintf(NULL, 0, "The function '%s' has %d arguments, %d were passed", *functionName, pythonArgsCount, passedArgsCount);
-      error = (char *)malloc(len + 1);
-      snprintf(error, len + 1, "The function '%s' has %d arguments, %d were passed", *functionName, pythonArgsCount, passedArgsCount);
-      Nan::ThrowError(error);
-      free(error);
-      return;
-    }
+      const int pythonArgsCount = Py_GetNumArguments(pFunc);
+      const int passedArgsCount = info.Length() - 2;
 
-    pArgs = BuildPyArgs(info);
-  } else {
-    Nan::ThrowError("Could not find function name / function not callable");
+      // Check if the passed args length matches the python function args length
+      if (passedArgsCount != pythonArgsCount)
+      {
+        char *error;
+        size_t len = (size_t)snprintf(NULL, 0, "The function '%s' has %d arguments, %d were passed", *functionName, pythonArgsCount, passedArgsCount);
+        error = (char *)malloc(len + 1);
+        snprintf(error, len + 1, "The function '%s' has %d arguments, %d were passed", *functionName, pythonArgsCount, passedArgsCount);
+        Nan::ThrowError(error);
+        free(error);
+        return;
+      }
+
+      pArgs = BuildPyArgs(info);
+    } else {
+      Nan::ThrowError("Could not find function name / function not callable");
+    }
   }
 
-  PyGILState_Release(gstate);
+  // PyGILState_Release(gstate);
 
   Nan::AsyncQueueWorker(new CallWorker(
     new Nan::Callback(Nan::To<v8::Function>(info[info.Length() - 1]).ToLocalChecked()),
