@@ -7,7 +7,7 @@ const threads = new Set()
 for (let i = 0; i < threadCount; i++) {
   setTimeout(() => {
     threads.add(
-      new Worker('/home/nick/Code/Personal/PyNode/worker.js')
+      new Worker(`${process.cwd()}/worker.js`)
     )
   }, i  * TIMEOUT)
 }
