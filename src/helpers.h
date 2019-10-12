@@ -7,7 +7,7 @@
 // v8 to Python
 PyObject *BuildPyArray(v8::Local<v8::Value> arg);
 PyObject *BuildPyDict(v8::Local<v8::Value> arg);
-PyObject *BuildPyArgs(const Nan::FunctionCallbackInfo<v8::Value> &args);
+PyObject *BuildPyArgs(const v8::FunctionCallbackInfo<v8::Value>& args);
 
 // Python to v8
 v8::Local<v8::Array> BuildV8Array(PyObject *obj);

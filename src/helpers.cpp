@@ -134,7 +134,7 @@ PyObject *BuildPyArray(v8::Local<v8::Value> arg)
   return list;
 }
 
-PyObject *BuildPyArgs(const Nan::FunctionCallbackInfo<v8::Value> &args)
+PyObject *BuildPyArgs(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
   // Arguments length minus 2: one for function name, one for js callback
   PyObject *pArgs = PyTuple_New(args.Length() - 2);

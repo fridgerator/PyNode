@@ -4,10 +4,10 @@ const expect = chai.expect
 const nodePython = require('./build/Release/PyNode')
 const { promisify } = require('util')
 
-nodePython.dlOpen('libpython3.6m.so')
+if (process.platform === 'linux') nodePython.dlOpen('libpython3.6m.so')
 nodePython.startInterpreter()
 nodePython.appendSysPath('./test_files')
-nodePython.openFile("tools")
+nodePython.openFile('tools')
 
 const call = promisify(nodePython.call)
 
@@ -25,6 +25,14 @@ describe('nodePython', () => {
   })
 
   describe('#call', () => {
+    it('should fail if the last parameter is not a function', () => {
+      try {
+        nodePython.call('return_immediate', 2)
+      } catch (err) {
+        expect(err.message).to.equal("Last argument to 'call' must be a function")
+      }
+    })
+
     it('should return the stack trace', done => {
       call('causes_runtime_error')
         .then(result => console.log('should not see this : ', result))
