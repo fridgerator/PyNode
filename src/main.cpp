@@ -1,4 +1,3 @@
-// #include <mutex>
 #include <sstream>
 #include <Python.h>
 #include <frameobject.h>
@@ -20,7 +19,6 @@ class py_context
 public:
     py_context()
     {
-      // std::unique_lock<std::mutex>(pyContextLock);
       gstate = PyGILState_Ensure();
     }
 
@@ -30,7 +28,6 @@ public:
     }
 
 private:
-    // static std::mutex pyContextLock;
     PyGILState_STATE gstate;
 };
 
@@ -112,14 +109,11 @@ void appendSysPath(const Nan::FunctionCallbackInfo<v8::Value> &args)
   appendPathStr = (char *)malloc(len + 1);
   snprintf(appendPathStr, len + 1, "import sys;sys.path.append(r\"%s\")", *pathName);
 
-  // PyGILState_STATE gstate;
-  // gstate = PyGILState_Ensure();
   {
     py_context ctx;
     PyRun_SimpleString(appendPathStr);
     free(appendPathStr);
   }
-  // PyGILState_Release(gstate);
 }
 
 void openFile(const v8::FunctionCallbackInfo<v8::Value>& info)
@@ -134,8 +128,6 @@ void openFile(const v8::FunctionCallbackInfo<v8::Value>& info)
 
   Nan::Utf8String fileName(info[0]);
 
-  // PyGILState_STATE gstate;
-  // gstate = PyGILState_Ensure();
   {
     py_context ctx;
 
@@ -153,8 +145,6 @@ void openFile(const v8::FunctionCallbackInfo<v8::Value>& info)
       return;
     }
   }
-
-  // PyGILState_Release(gstate);
 }
 
 void eval(const Nan::FunctionCallbackInfo<v8::Value> &args)
@@ -173,10 +163,8 @@ class CallWorker : public Nan::AsyncWorker {
   public:
     CallWorker(Nan::Callback *callback, PyObject *pyArgs, PyObject *pFunc)
       : Nan::AsyncWorker(callback), pyArgs(pyArgs), pFunc(pFunc) {
-        // gstate = PyGILState_Ensure();
       }
     ~CallWorker() {
-      // PyGILState_Release(gstate);
     }
     
     void Execute () {
@@ -303,14 +291,12 @@ class CallWorker : public Nan::AsyncWorker {
         }
       }
 
-      // PyGILState_Release(gstate);
       callback->Call(2, argv);
     }
   
   private:
     PyObject *pyArgs;
     PyObject *pFunc;
-    // PyGILState_STATE gstate;
 };
 
 void call(const v8::FunctionCallbackInfo<v8::Value>& info) {
@@ -325,9 +311,6 @@ void call(const v8::FunctionCallbackInfo<v8::Value>& info) {
   }
 
   Nan::Utf8String functionName(info[0]);
-
-  // PyGILState_STATE gstate;
-  // gstate = PyGILState_Ensure();
 
   PyNodeData* data =
       reinterpret_cast<PyNodeData*>(info.Data().As<v8::External>()->Value());
@@ -362,8 +345,6 @@ void call(const v8::FunctionCallbackInfo<v8::Value>& info) {
       Nan::ThrowError("Could not find function name / function not callable");
     }
   }
-
-  // PyGILState_Release(gstate);
 
   Nan::AsyncQueueWorker(new CallWorker(
     new Nan::Callback(Nan::To<v8::Function>(info[info.Length() - 1]).ToLocalChecked()),
