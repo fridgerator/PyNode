@@ -2,7 +2,7 @@ const { Worker, isMainThread, parentPort, workerData } = require('worker_threads
 
 const TIMEOUT = 1000
 
-const threadCount = 2
+const threadCount = 3
 const threads = new Set()
 for (let i = 0; i < threadCount; i++) {
   setTimeout(() => {

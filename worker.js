@@ -1,12 +1,13 @@
 const { parentPort } = require('worker_threads')
 const pynode = require('./build/Release/PyNode')
 
-pynode.startInterpreter()
-    pynode.appendSysPath('./test_files')
-    pynode.openFile('performance')
 const longRunningFunction = () => {
   return new Promise((resolve, reject) => {
     console.log('cwd : ', process.cwd())
+
+    pynode.startInterpreter()
+    pynode.appendSysPath('./test_files')
+    pynode.openFile('performance')
     
     pynode.call('generate_slow_number', 5, 7, (err, result) => {
       if (err) {

@@ -25,10 +25,13 @@ public:
     ~py_context()
     {
       PyGILState_Release(gstate);
+      if (PyGILState_Check() == 1)
+        pts = PyEval_SaveThread();
     }
 
 private:
     PyGILState_STATE gstate;
+    PyThreadState *pts;
 };
 
 class PyNodeData {
