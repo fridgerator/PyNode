@@ -262,9 +262,9 @@ describe('nodePython', () => {
     })
   })
 
-  describe('stopInterpreter', () => {
-    it('should stop the interpreter', () => {
-      nodePython.stopInterpreter()
-    })
-  })
+  // describe('stopInterpreter', () => {
+  //   it('should stop the interpreter', () => {
+  //     nodePython.stopInterpreter()
+  //   })
+  // })
 })

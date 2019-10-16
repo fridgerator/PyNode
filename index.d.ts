@@ -15,7 +15,7 @@ declare module '@fridgerator/pynode' {
   /**
    * Stops the Python interpreter
    */
-  export function stopInterpreter(pythonpath?: string): void;
+  // export function stopInterpreter(pythonpath?: string): void;
 
   /**
    * Add an additional path as a python module search path
