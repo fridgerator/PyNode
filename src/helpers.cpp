@@ -30,7 +30,11 @@ PyObject *BuildPyDict(v8::Local<v8::Value> arg)
     }
     else if (val->IsBoolean())
     {
-      long b = val->BooleanValue(Nan::GetCurrentContext()->GetIsolate());
+      #if NODE_MODULE_VERSION <= NODE_12_0_MODULE_VERSION
+        long b = val->BooleanValue(Nan::GetCurrentContext()).FromJust();
+      #else
+        long b = val->BooleanValue(Nan::GetCurrentContext()->GetIsolate());
+      #endif
       PyDict_SetItem(dict, pyKey, PyBool_FromLong(b));
     }
     else if (val->IsDate())
@@ -95,7 +99,11 @@ PyObject *BuildPyArray(v8::Local<v8::Value> arg)
     }
     else if (element->IsBoolean())
     {
-      bool b = element->BooleanValue(Nan::GetCurrentContext()->GetIsolate());
+      #if NODE_MODULE_VERSION <= NODE_12_0_MODULE_VERSION
+        bool b = element->BooleanValue(Nan::GetCurrentContext()).FromJust();
+      #else
+        bool b = element->BooleanValue(Nan::GetCurrentContext()->GetIsolate());
+      #endif
       PyList_SetItem(list, i, PyBool_FromLong(b));
     }
     else if (element->IsDate())
@@ -160,7 +168,11 @@ PyObject *BuildPyArgs(const v8::FunctionCallbackInfo<v8::Value>& args)
     }
     else if (arg->IsBoolean())
     {
-      long b = arg->BooleanValue(Nan::GetCurrentContext()->GetIsolate());
+      #if NODE_MODULE_VERSION <= NODE_12_0_MODULE_VERSION
+        long b = arg->BooleanValue(Nan::GetCurrentContext()).FromJust();
+      #else
+        long b = arg->BooleanValue(Nan::GetCurrentContext()->GetIsolate());
+      #endif
       PyTuple_SetItem(pArgs, i - 1, PyBool_FromLong(b));
     }
     else if (arg->IsDate())
