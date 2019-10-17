@@ -1,4 +1,5 @@
 #include "helpers.h"
+#define UNUSED(expr) (void)(expr)
 
 PyObject *BuildPyDict(v8::Local<v8::Value> arg)
 {
@@ -8,7 +9,7 @@ PyObject *BuildPyDict(v8::Local<v8::Value> arg)
   for (unsigned int i = 0; i < keys->Length(); i++)
   {
     auto key = keys->Get(Nan::GetCurrentContext(), i).ToLocalChecked();
-    v8::Local<v8::Value> val = obj->Get(key);
+    v8::Local<v8::Value> val = obj->Get(Nan::GetCurrentContext(), key).ToLocalChecked();
     Nan::Utf8String keyStr(key);
     PyObject *pyKey = PyBytes_FromString(*keyStr);
     if (val->IsNumber())
@@ -30,7 +31,7 @@ PyObject *BuildPyDict(v8::Local<v8::Value> arg)
     }
     else if (val->IsBoolean())
     {
-      #if NODE_MODULE_VERSION <= NODE_12_0_MODULE_VERSION
+      #if NODE_MODULE_VERSION < NODE_12_0_MODULE_VERSION
         long b = val->BooleanValue(Nan::GetCurrentContext()).FromJust();
       #else
         long b = val->BooleanValue(Nan::GetCurrentContext()->GetIsolate());
@@ -99,7 +100,7 @@ PyObject *BuildPyArray(v8::Local<v8::Value> arg)
     }
     else if (element->IsBoolean())
     {
-      #if NODE_MODULE_VERSION <= NODE_12_0_MODULE_VERSION
+      #if NODE_MODULE_VERSION < NODE_12_0_MODULE_VERSION
         bool b = element->BooleanValue(Nan::GetCurrentContext()).FromJust();
       #else
         bool b = element->BooleanValue(Nan::GetCurrentContext()->GetIsolate());
@@ -168,7 +169,7 @@ PyObject *BuildPyArgs(const v8::FunctionCallbackInfo<v8::Value>& args)
     }
     else if (arg->IsBoolean())
     {
-      #if NODE_MODULE_VERSION <= NODE_12_0_MODULE_VERSION
+      #if NODE_MODULE_VERSION < NODE_12_0_MODULE_VERSION
         long b = arg->BooleanValue(Nan::GetCurrentContext()).FromJust();
       #else
         long b = arg->BooleanValue(Nan::GetCurrentContext()->GetIsolate());
@@ -233,37 +234,44 @@ v8::Local<v8::Array> BuildV8Array(PyObject *obj)
     if (strcmp(localObj->ob_type->tp_name, "int") == 0)
     {
       double result = PyLong_AsDouble(localObj);
-      arr->Set(Nan::GetCurrentContext(), i, Nan::New(result));
+      auto unused_result = arr->Set(Nan::GetCurrentContext(), i, Nan::New(result));
+      UNUSED(unused_result);
     }
     else if (strcmp(localObj->ob_type->tp_name, "str") == 0)
     {
       auto str = Nan::New(PyUnicode_AsUTF8(localObj)).ToLocalChecked();
-      arr->Set(Nan::GetCurrentContext(), i, str);
+      auto unused_result = arr->Set(Nan::GetCurrentContext(), i, str);
+      UNUSED(unused_result);
     }
     else if (strcmp(localObj->ob_type->tp_name, "float") == 0)
     {
       double result = PyFloat_AsDouble(localObj);
-      arr->Set(Nan::GetCurrentContext(), i, Nan::New(result));
+      auto unused_result = arr->Set(Nan::GetCurrentContext(), i, Nan::New(result));
+      UNUSED(unused_result);
     }
     else if (strcmp(localObj->ob_type->tp_name, "bytes") == 0)
     {
       auto str = Nan::New(PyBytes_AsString(localObj)).ToLocalChecked();
-      arr->Set(Nan::GetCurrentContext(), i, str);
+      auto unused_result = arr->Set(Nan::GetCurrentContext(), i, str);
+      UNUSED(unused_result);
     }
     else if (strcmp(localObj->ob_type->tp_name, "bool") == 0)
     {
       bool b = PyObject_IsTrue(localObj);
-      arr->Set(Nan::GetCurrentContext(), i, Nan::New(b));
+      auto unused_result = arr->Set(Nan::GetCurrentContext(), i, Nan::New(b));
+      UNUSED(unused_result);
     }
     else if (strcmp(localObj->ob_type->tp_name, "list") == 0)
     {
       auto innerArr = BuildV8Array(localObj);
-      arr->Set(Nan::GetCurrentContext(), i, innerArr);
+      auto unused_result = arr->Set(Nan::GetCurrentContext(), i, innerArr);
+      UNUSED(unused_result);
     }
     else if (strcmp(localObj->ob_type->tp_name, "dict") == 0)
     {
       auto innerDict = BuildV8Dict(localObj);
-      arr->Set(Nan::GetCurrentContext(), i, innerDict);
+      auto unused_result = arr->Set(Nan::GetCurrentContext(), i, innerDict);
+      UNUSED(unused_result);
     }
   }
   return arr;
@@ -290,37 +298,44 @@ v8::Local<v8::Object> BuildV8Dict(PyObject *obj)
     if (strcmp(val->ob_type->tp_name, "int") == 0)
     {
       double result = PyLong_AsDouble(val);
-      jsObj->Set(Nan::GetCurrentContext(), jsKey, Nan::New(result));
+      auto unused_result = jsObj->Set(Nan::GetCurrentContext(), jsKey, Nan::New(result));
+      UNUSED(unused_result);
     }
     else if (strcmp(val->ob_type->tp_name, "str") == 0)
     {
       auto str = Nan::New(PyUnicode_AsUTF8(val)).ToLocalChecked();
-      jsObj->Set(Nan::GetCurrentContext(), jsKey, str);
+      auto unused_result = jsObj->Set(Nan::GetCurrentContext(), jsKey, str);
+      UNUSED(unused_result);
     }
     else if (strcmp(val->ob_type->tp_name, "float") == 0)
     {
       double result = PyFloat_AsDouble(val);
-      jsObj->Set(Nan::GetCurrentContext(), jsKey, Nan::New(result));
+      auto unused_result = jsObj->Set(Nan::GetCurrentContext(), jsKey, Nan::New(result));
+      UNUSED(unused_result);
     }
     else if (strcmp(val->ob_type->tp_name, "bytes") == 0)
     {
       auto str = Nan::New(PyBytes_AsString(val)).ToLocalChecked();
-      jsObj->Set(Nan::GetCurrentContext(), jsKey, str);
+      auto unused_result = jsObj->Set(Nan::GetCurrentContext(), jsKey, str);
+      UNUSED(unused_result);
     }
     else if (strcmp(val->ob_type->tp_name, "bool") == 0)
     {
       bool b = PyObject_IsTrue(val);
-      jsObj->Set(Nan::GetCurrentContext(), jsKey, Nan::New(b));
+      auto unused_result = jsObj->Set(Nan::GetCurrentContext(), jsKey, Nan::New(b));
+      UNUSED(unused_result);
     }
     else if (strcmp(val->ob_type->tp_name, "list") == 0)
     {
       auto innerArr = BuildV8Array(val);
-      jsObj->Set(Nan::GetCurrentContext(), jsKey, innerArr);
+      auto unused_result = jsObj->Set(Nan::GetCurrentContext(), jsKey, innerArr);
+      UNUSED(unused_result);
     }
     else if (strcmp(val->ob_type->tp_name, "dict") == 0)
     {
       auto innerDict = BuildV8Dict(val);
-      jsObj->Set(Nan::GetCurrentContext(), jsKey, innerDict);
+      auto unused_result = jsObj->Set(Nan::GetCurrentContext(), jsKey, innerDict);
+      UNUSED(unused_result);
     }
   }
   return jsObj;
