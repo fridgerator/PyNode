@@ -170,8 +170,8 @@ void eval(const Nan::FunctionCallbackInfo<v8::Value> &args)
 
 class CallWorker : public Nan::AsyncWorker {
   public:
-    CallWorker(Nan::Callback *callback, PyObject *pyArgs, PyObject *pFunc)
-      : Nan::AsyncWorker(callback), pyArgs(pyArgs), pFunc(pFunc) {
+    CallWorker(Nan::Callback *callback, PyObject *pyArgs, PyObject *pFunc, std::string error)
+      : Nan::AsyncWorker(callback), pyArgs(pyArgs), pFunc(pFunc), error(error) {
       }
     ~CallWorker() {
     }
@@ -181,13 +181,13 @@ class CallWorker : public Nan::AsyncWorker {
     }
 
     void HandleErrorCallback () {
-      Nan::HandleScope scope;
+      // Nan::HandleScope scope;
 
-      v8::Local<v8::Value> err[] = {
-        v8::Exception::Error(Nan::New<v8::String>(ErrorMessage()).ToLocalChecked())
-      };
+      // v8::Local<v8::Value> err[] = {
+      //   v8::Exception::Error(Nan::New<v8::String>(ErrorMessage()).ToLocalChecked())
+      // };
 
-      Nan::Call(callback->GetFunction(), Nan::GetCurrentContext()->Global(), 1, err);
+      // Nan::Call(callback->GetFunction(), Nan::GetCurrentContext()->Global(), 1, err);
     }
 
     void HandleOKCallback () {
@@ -197,6 +197,13 @@ class CallWorker : public Nan::AsyncWorker {
         Nan::Null(),
         Nan::Null()
       };
+
+      if (!error.empty()) {
+        fprintf(stderr, "\n\nshould have error : %s\n\n", error.c_str());
+        argv[0] = Nan::Error(error.c_str());
+        callback->Call(2, argv, async_resource);
+        return;
+      }
 
       {
         py_context ctx;
@@ -256,7 +263,7 @@ class CallWorker : public Nan::AsyncWorker {
           else
           {
             std::string errMsg = std::string("Unsupported type returned (") + pValue->ob_type->tp_name + std::string("), only pure Python types are supported.");
-            Py_DECREF(pValue);
+            // Py_DECREF(pValue);
             argv[0] = Nan::Error(errMsg.c_str());
           }
 
@@ -286,8 +293,11 @@ class CallWorker : public Nan::AsyncWorker {
 
             error.append(stream.str());
 
+            // Py_DecRef(pTraceback);
             Py_DecRef(errOccurred);
             Py_DecRef(pTypeString);
+            // Py_DecRef(pType);
+            // Py_DecRef(pValue);
             PyErr_Restore(pType, pValue, pTraceback);
           } else {
             error.append("Function call failed");
@@ -306,6 +316,7 @@ class CallWorker : public Nan::AsyncWorker {
   private:
     PyObject *pyArgs;
     PyObject *pFunc;
+    std::string error;
 };
 
 void call(const v8::FunctionCallbackInfo<v8::Value>& info) {
@@ -326,39 +337,61 @@ void call(const v8::FunctionCallbackInfo<v8::Value>& info) {
 
   PyObject *pFunc, *pArgs;
 
+  std::string err;
+
   {
     py_context ctx;
 
     pFunc = PyObject_GetAttrString(data->pModule, *functionName);
-    int callable = PyCallable_Check(pFunc);
 
-    if (pFunc != NULL && callable == 1)
-    {
-      const int pythonArgsCount = Py_GetNumArguments(pFunc);
-      const int passedArgsCount = info.Length() - 2;
-
-      // Check if the passed args length matches the python function args length
-      if (passedArgsCount != pythonArgsCount)
-      {
-        char *error;
-        size_t len = (size_t)snprintf(NULL, 0, "The function '%s' has %d arguments, %d were passed", *functionName, pythonArgsCount, passedArgsCount);
-        error = (char *)malloc(len + 1);
-        snprintf(error, len + 1, "The function '%s' has %d arguments, %d were passed", *functionName, pythonArgsCount, passedArgsCount);
-        Nan::ThrowError(error);
-        free(error);
-        return;
-      }
-
-      pArgs = BuildPyArgs(info);
+    if (pFunc == NULL) {
+      err.append("Could not find function name / function not callable");
     } else {
-      Nan::ThrowError("Could not find function name / function not callable");
+      if (PyCallable_Check(pFunc) == 1) {
+        const int pythonArgsCount = Py_GetNumArguments(pFunc);
+        const int passedArgsCount = info.Length() - 2;
+
+        if (passedArgsCount != pythonArgsCount) {
+          err.append("The function '");
+          err.append(*functionName);
+          err.append("' has " + std::to_string(pythonArgsCount));
+          err.append(" arguments, " + std::to_string(passedArgsCount));
+          err.append(" were passed");
+          Py_DecRef(pFunc);
+        } else {
+          pArgs = BuildPyArgs(info);
+        }
+      } else {
+        Py_DECREF(pFunc);
+      }
     }
+
+    // if (pFunc != NULL && callable == 1)
+    // {
+      
+
+    //   // Check if the passed args length matches the python function args length
+    //   // if (passedArgsCount != pythonArgsCount)
+    //   {
+    //     err.append("The function '");
+    //     err.append(*functionName);
+    //     err.append("' has " + std::to_string(pythonArgsCount));
+    //     err.append(" arguments, " + std::to_string(passedArgsCount));
+    //     err.append(" were passed");
+    //     pArgs = NULL;
+    //   } else {
+    //     pArgs = BuildPyArgs(info);
+    //   }
+    // } else {
+    //   err.append("Could not find function name / function not callable");
+    // }
   }
 
   Nan::AsyncQueueWorker(new CallWorker(
     new Nan::Callback(Nan::To<v8::Function>(info[info.Length() - 1]).ToLocalChecked()),
     pArgs,
-    pFunc
+    pFunc,
+    err
   ));
 }
 

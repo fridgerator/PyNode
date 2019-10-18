@@ -1,7 +1,7 @@
 const chai = require('chai')
 const expect = chai.expect
 
-const nodePython = require('./build/Release/PyNode')
+const nodePython = require('./src/index')
 const { promisify } = require('util')
 
 if (process.platform === 'linux') nodePython.dlOpen('libpython3.6m.so')
@@ -24,6 +24,22 @@ describe('nodePython', () => {
     })
   })
 
+  describe("proxy functions", () => {
+    it('should "call" if the function exists', done => {
+      nodePython.return_immediate('booya', (err, result) => {
+        expect(result).to.equal('booya')
+        done()
+      })
+    })
+
+    it('should return an error if the function does not exist', done => {
+      nodePython.some_py_function_that_does_not_exist(1, 2, 3, (err, result) => {
+        expect(err.message).to.equal('Could not find function name / function not callable')
+        done()
+      })
+    })
+  })
+
   describe('#call', () => {
     it('should fail if the last parameter is not a function', () => {
       try {
@@ -33,10 +49,19 @@ describe('nodePython', () => {
       }
     })
 
+    it('should fail if the method does not exist', done => {
+      call('this_function_does_not_exist', 1, 2, 3)
+        .catch(err => {
+          expect(err.message).to.equal('Could not find function name / function not callable')
+          done()
+        })
+    })
+
     it('should return the stack trace', done => {
       call('causes_runtime_error')
         .then(result => console.log('should not see this : ', result))
         .catch(err => {
+          console.log('\n\n causes_runtime_error:', err.message, '\n\n')
           expect(err.message.includes('tools.py')).to.equal(true)
           expect(err.message.includes('in causes_runtime_error')).to.equal(true)
           expect(err.message.includes('name \'secon\' is not defined')).to.equal(true)

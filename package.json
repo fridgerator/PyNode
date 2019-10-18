@@ -2,7 +2,7 @@
   "name": "@fridgerator/pynode",
   "version": "0.4.2",
   "description": "Node <-> Python interopability",
-  "main": "build/Release/PyNode",
+  "main": "./src/index.js",
   "author": "Nick Franken <shnick@gmail.com>",
   "license": "MIT",
   "homepage": "https://github.com/fridgerator/PyNode",
