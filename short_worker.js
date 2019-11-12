@@ -1,15 +1,13 @@
 const { parentPort } = require('worker_threads')
 const pynode = require('./build/Release/PyNode')
 
-const longRunningFunction = () => {
+const shortRunningFunction = () => {
   return new Promise((resolve, reject) => {
-    console.log('cwd : ', process.cwd())
-
     pynode.startInterpreter()
     pynode.appendSysPath('./test_files')
-    pynode.openFile('performance')
+    pynode.openFile('tools')
     
-    pynode.call('generate_slow_number', 5, 7, (err, result) => {
+    pynode.call('multiply', 3, 4, (err, result) => {
       if (err) {
         reject(err)
         return
@@ -19,12 +17,12 @@ const longRunningFunction = () => {
   })
 }
 
-longRunningFunction()
+shortRunningFunction()
   .then(result => {
-    console.log('result : ', result)
+    console.log('short result : ', result)
     parentPort.postMessage(result)
   })
   .catch(e => {
-    console.log('err : ', e)
+    console.log('short err : ', e)
     parentPort.postMessage({error: e})
   })
