@@ -16,12 +16,11 @@
     "test": "mocha"
   },
   "dependencies": {
-    "nan": "^2.14.0"
+    "node-addon-api": "^1.7.1"
   },
   "devDependencies": {
     "chai": "^4.2.0",
-    "mocha": "^6.1.4",
-    "node-gyp": "^5.0.0"
+    "mocha": "^6.1.4"
   },
   "gypfile": true,
   "types": "index.d.ts",

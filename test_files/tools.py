@@ -11,6 +11,7 @@ def time_series_data():
       str(now),
       random.random()
     ])
+  # print(data, flush=True)
   return data
 
 def sum_items(arr):
@@ -21,6 +22,7 @@ def multiply(a,b):
 
 def return_immediate(x):
   # print(x, type(x))
+  # print(x, flush=True)
   return x
 
 def return_none():
