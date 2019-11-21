@@ -28,7 +28,7 @@ Napi::Value DlOpen(const Napi::CallbackInfo &info) {
 #ifdef _WIN32
   Napi::Error::New(env, "dlOpen does not work in windows")
       .ThrowAsJavaScriptException();
-  return;
+  return env.Null();
 #endif
 
   if (!info[0] || !info[0].IsString()) {
@@ -38,7 +38,9 @@ Napi::Value DlOpen(const Napi::CallbackInfo &info) {
   }
 
   std::string dlFile = info[0].As<Napi::String>().ToString();
+#ifndef _WIN32
   dlopen(dlFile.c_str(), RTLD_LAZY | RTLD_GLOBAL);
+#endif
   return env.Null();
 }
 
