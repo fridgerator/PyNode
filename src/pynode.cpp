@@ -11,6 +11,13 @@ PyObject *pModule;
 Napi::Value StartInterpreter(const Napi::CallbackInfo &info) {
   Napi::Env env = info.Env();
 
+  if (info.Length() == 1 && info[0].IsString()) {
+    std::string pathString = info[0].As<Napi::String>().ToString();
+    std::wstring path(pathString.length(), L'#');
+    mbstowcs(&path[0], pathString.c_str(), pathString.length());
+    Py_SetPath(path.c_str());
+  }
+
   int isInitialized = Py_IsInitialized();
   if (isInitialized == 0)
     Py_Initialize();
