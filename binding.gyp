@@ -43,15 +43,11 @@
           }
         }],
         ['OS!="win"', {
-          "variables": {
-            "PY_INCLUDE%": "<!(if [ -z \"$PY_INCLUDE\" ]; then echo $(python-config --includes); else echo $PY_INCLUDE; fi)",\
-            "PY_LIBS%": "<!(if [ -z \"$PY_LIBS\" ]; then echo $(python-config --ldflags); else echo $PY_LIBS; fi)"
-          },
           "include_dirs": [
-            "<(PY_INCLUDE)"
+            "<!(python3-config --includes | sed 's/-I//g' | sed 's/ .*//g')"
           ],
-          "libraries": [
-            "<(PY_LIBS)",
+          "ldflags": [
+            "<!(python3-config --ldflags)",
           ]
         }]
       ]
