@@ -4,6 +4,7 @@
 #endif
 #include "helpers.hpp"
 #include "worker.hpp"
+#include "pywrapper.hpp"
 #include <iostream>
 
 PyObject *pModule;
@@ -203,6 +204,8 @@ Napi::Object PyNodeInit(Napi::Env env, Napi::Object exports) {
   exports.Set(Napi::String::New(env, "eval"), Napi::Function::New(env, Eval));
 
   exports.Set(Napi::String::New(env, "call"), Napi::Function::New(env, Call));
+
+  PyNodeWrappedPythonObject::Init(env, exports);
 
   return exports;
 }

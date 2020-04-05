@@ -6,7 +6,8 @@
         "src/main.cpp",
         "src/helpers.cpp",
         "src/pynode.cpp",
-        "src/worker.cpp"
+        "src/worker.cpp",
+        "src/pywrapper.cpp"
       ],
       'include_dirs': [
         "<!@(node -p \"require('node-addon-api').include\")"

@@ -77,11 +77,9 @@ void PyNodeWorker::OnOK() {
       auto obj = BuildV8Dict(Env(), pValue);
       result[1] = obj;
     } else {
-      std::string errMsg =
-          std::string("Unsupported type returned (") +
-          pValue->ob_type->tp_name +
-          std::string("), only pure Python types are supported.");
-      result[0] = Napi::String::New(Env(), errMsg);
+      auto exp = Napi::External<PyObject>::New(Env(), pValue);
+      auto obj = PyNodeWrappedPythonObject::constructor.New({exp});
+      result[1] = obj;
     }
 
     Py_DECREF(pValue);
