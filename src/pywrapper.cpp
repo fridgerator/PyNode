@@ -36,8 +36,6 @@ Napi::FunctionReference PyNodeWrappedPythonObject::constructor;
 Napi::Value PyNodeWrappedPythonObject::GetAttr(const Napi::CallbackInfo &info){
     Napi::Env env = info.Env();
     std::string attrname = info[0].As<Napi::String>().ToString();
-    std::cout << "getting attr " + attrname << std::endl;
-    std::cout << "this is " << this->_value << std::endl;
     PyObject * attr = PyObject_GetAttrString(this->_value, attrname.c_str());
     if (attr == NULL) {
         std::string error("Attribute " + attrname + " not found.");
@@ -61,7 +59,11 @@ Napi::Value PyNodeWrappedPythonObject::Call(const Napi::CallbackInfo &info){
     Py_DECREF(pArgs);
     PyObject *error_occurred = PyErr_Occurred();
     if (error_occurred != NULL) {
-        // TODO - handle error
+        // TODO - get the traceback string into Javascript
+        std::string error("A Python error occurred.");
+        PyErr_Print();
+        Napi::Error::New(env, error).ThrowAsJavaScriptException();
+        return env.Null();
     }
     Napi::Value returnval = ConvertFromPython(env, pReturnValue);
     Py_DECREF(pReturnValue);

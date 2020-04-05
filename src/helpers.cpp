@@ -98,26 +98,28 @@ PyObject *BuildPyArgs(const Napi::CallbackInfo &args, size_t start_index, size_t
     if (arg.IsNumber()) {
       double num = arg.As<Napi::Number>().ToNumber();
       if (isNapiValueInt(env, arg)) {
-        PyTuple_SetItem(pArgs, i - 1, PyLong_FromLong(num));
+        PyTuple_SetItem(pArgs, i - start_index, PyLong_FromLong(num));
       } else {
-        PyTuple_SetItem(pArgs, i - 1, PyFloat_FromDouble(num));
+        PyTuple_SetItem(pArgs, i - start_index, PyFloat_FromDouble(num));
       }
     } else if (arg.IsString()) {
       std::string str = arg.As<Napi::String>().ToString();
-      PyTuple_SetItem(pArgs, i - 1, PyUnicode_FromString(str.c_str()));
+      PyTuple_SetItem(pArgs, i - start_index, PyUnicode_FromString(str.c_str()));
     } else if (arg.IsBoolean()) {
       long b = arg.As<Napi::Boolean>().ToBoolean();
-      PyTuple_SetItem(pArgs, i - 1, PyBool_FromLong(b));
+      PyTuple_SetItem(pArgs, i - start_index, PyBool_FromLong(b));
       // } else if (arg.IsDate()) {
       //   printf("Dates dont work yet");
       //   // Nan::ThrowError("Dates dont work yet");
       //   throw Napi::Error::New(args.Env(), "Dates dont work  yet");
     } else if (arg.IsArray()) {
       PyObject *list = BuildPyArray(env, arg);
-      PyTuple_SetItem(pArgs, i - 1, list);
+      PyTuple_SetItem(pArgs, i - start_index, list);
     } else if (arg.IsObject()) {
       PyObject *dict = BuildPyDict(env, arg);
-      PyTuple_SetItem(pArgs, i - 1, dict);
+      PyTuple_SetItem(pArgs, i - start_index, dict);
+    } else {
+      std::cout << "Unknown arg type" << std::endl;
     }
   }
 
