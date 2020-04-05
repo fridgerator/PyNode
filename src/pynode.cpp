@@ -168,9 +168,9 @@ Napi::Value Call(const Napi::CallbackInfo &info) {
         return env.Null();
       }
 
-      pArgs = BuildPyArgs(info);
+      // Arguments length minus 2: one for function name, one for js callback
+      pArgs = BuildPyArgs(info, 1, info.Length() - 2);
     } else {
-      std::cerr << "nope" << std::endl;
       Napi::Error::New(env,
                        "Could not find function name / function not callable")
           .ThrowAsJavaScriptException();

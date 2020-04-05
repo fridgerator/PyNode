@@ -10,8 +10,9 @@ class PyNodeWrappedPythonObject : public Napi::ObjectWrap<PyNodeWrappedPythonObj
     static Napi::Object Init(Napi::Env env, Napi::Object exports);
     PyNodeWrappedPythonObject(const Napi::CallbackInfo &info);
     static Napi::FunctionReference constructor;
-    Napi::Value GetValue(const Napi::CallbackInfo &info);
-    Napi::Value SetValue(const Napi::CallbackInfo &info);
+    Napi::Value Call(const Napi::CallbackInfo &info);
+    Napi::Value GetAttr(const Napi::CallbackInfo &info);
+    Napi::Value Repr(const Napi::CallbackInfo &info);
 
   private:
     PyObject * _value;

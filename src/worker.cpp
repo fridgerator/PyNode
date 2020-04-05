@@ -53,35 +53,7 @@ void PyNodeWorker::OnOK() {
   std::vector<Napi::Value> result = {Env().Null(), Env().Null()};
 
   if (pValue != NULL) {
-    if (strcmp(pValue->ob_type->tp_name, "NoneType") == 0) {
-      // leave as null
-    } else if (strcmp(pValue->ob_type->tp_name, "bool") == 0) {
-      bool b = PyObject_IsTrue(pValue);
-      result[1] = Napi::Boolean::New(Env(), b);
-    } else if (strcmp(pValue->ob_type->tp_name, "int") == 0) {
-      double d = PyLong_AsDouble(pValue);
-      result[1] = Napi::Number::New(Env(), d);
-    } else if (strcmp(pValue->ob_type->tp_name, "float") == 0) {
-      double d = PyFloat_AsDouble(pValue);
-      result[1] = Napi::Number::New(Env(), d);
-    } else if (strcmp(pValue->ob_type->tp_name, "bytes") == 0) {
-      auto str = Napi::String::New(Env(), PyBytes_AsString(pValue));
-      result[1] = str;
-    } else if (strcmp(pValue->ob_type->tp_name, "str") == 0) {
-      auto str = Napi::String::New(Env(), PyUnicode_AsUTF8(pValue));
-      result[1] = str;
-    } else if (strcmp(pValue->ob_type->tp_name, "list") == 0) {
-      auto arr = BuildV8Array(Env(), pValue);
-      result[1] = arr;
-    } else if (strcmp(pValue->ob_type->tp_name, "dict") == 0) {
-      auto obj = BuildV8Dict(Env(), pValue);
-      result[1] = obj;
-    } else {
-      auto exp = Napi::External<PyObject>::New(Env(), pValue);
-      auto obj = PyNodeWrappedPythonObject::constructor.New({exp});
-      result[1] = obj;
-    }
-
+    result[1] = ConvertFromPython(Env(), pValue);
     Py_DECREF(pValue);
   } else {
     std::string error;

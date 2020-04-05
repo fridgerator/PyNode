@@ -89,11 +89,11 @@ PyObject *BuildPyDict(Napi::Env env, Napi::Value arg) {
   return dict;
 }
 
-PyObject *BuildPyArgs(const Napi::CallbackInfo &args) {
+PyObject *BuildPyArgs(const Napi::CallbackInfo &args, size_t start_index, size_t count) {
   Napi::Env env = args.Env();
   // Arguments length minus 2: one for function name, one for js callback
-  PyObject *pArgs = PyTuple_New(args.Length() - 2);
-  for (size_t i = 1; i < args.Length() - 1; i++) {
+  PyObject *pArgs = PyTuple_New(count);
+  for (size_t i = start_index; i < start_index + count; i++) {
     auto arg = args[i];
     if (arg.IsNumber()) {
       double num = arg.As<Napi::Number>().ToNumber();
@@ -210,4 +210,37 @@ Napi::Object BuildV8Dict(Napi::Env env, PyObject *obj) {
   }
 
   return jsObj;
+}
+
+Napi::Value ConvertFromPython(Napi::Env env, PyObject * pValue) {
+    Napi::Value result = env.Null();
+    if (strcmp(pValue->ob_type->tp_name, "NoneType") == 0) {
+      // leave as null
+    } else if (strcmp(pValue->ob_type->tp_name, "bool") == 0) {
+      bool b = PyObject_IsTrue(pValue);
+      result = Napi::Boolean::New(env, b);
+    } else if (strcmp(pValue->ob_type->tp_name, "int") == 0) {
+      double d = PyLong_AsDouble(pValue);
+      result = Napi::Number::New(env, d);
+    } else if (strcmp(pValue->ob_type->tp_name, "float") == 0) {
+      double d = PyFloat_AsDouble(pValue);
+      result = Napi::Number::New(env, d);
+    } else if (strcmp(pValue->ob_type->tp_name, "bytes") == 0) {
+      auto str = Napi::String::New(env, PyBytes_AsString(pValue));
+      result = str;
+    } else if (strcmp(pValue->ob_type->tp_name, "str") == 0) {
+      auto str = Napi::String::New(env, PyUnicode_AsUTF8(pValue));
+      result = str;
+    } else if (strcmp(pValue->ob_type->tp_name, "list") == 0) {
+      auto arr = BuildV8Array(env, pValue);
+      result = arr;
+    } else if (strcmp(pValue->ob_type->tp_name, "dict") == 0) {
+      auto obj = BuildV8Dict(env, pValue);
+      result = obj;
+    } else {
+      auto exp = Napi::External<PyObject>::New(env, pValue);
+      auto obj = PyNodeWrappedPythonObject::constructor.New({exp});
+      result = obj;
+    }
+    return result;
 }
