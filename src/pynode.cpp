@@ -31,6 +31,18 @@ Napi::Value StartInterpreter(const Napi::CallbackInfo &info) {
   if (threadsInitialized == 0)
     PyEval_InitThreads();
 
+  /* Load PyNode's own module into Python. This makes WrappedJSObject instances
+     behave better (eg, having attributes) */
+  PyObject *pName;
+  pName = PyUnicode_DecodeFSDefault("pynode");
+  pModule = PyImport_Import(pName);
+  Py_DECREF(pName);
+  if (pModule == NULL) {
+    PyErr_Print();
+    Napi::Error::New(env, "Failed to load the pynode module into the Python interpreter")
+        .ThrowAsJavaScriptException();
+  }
+
   return env.Null();
 }
 
