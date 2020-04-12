@@ -5,6 +5,7 @@
 #include "helpers.hpp"
 #include "worker.hpp"
 #include "pywrapper.hpp"
+#include "jswrapper.h"
 #include <iostream>
 
 PyObject *pModule;
@@ -18,10 +19,13 @@ Napi::Value StartInterpreter(const Napi::CallbackInfo &info) {
     mbstowcs(&path[0], pathString.c_str(), pathString.length());
     Py_SetPath(path.c_str());
   }
+  
+  PyImport_AppendInittab("pynode", &PyInit_jswrapper);
 
   int isInitialized = Py_IsInitialized();
-  if (isInitialized == 0)
+  if (isInitialized == 0) {
     Py_Initialize();
+  }
 
   int threadsInitialized = PyEval_ThreadsInitialized();
   if (threadsInitialized == 0)

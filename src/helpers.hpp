@@ -23,6 +23,7 @@ private:
 // v8 to Python
 PyObject *BuildPyArray(Napi::Env env, Napi::Value arg);
 PyObject *BuildPyDict(Napi::Env env, Napi::Value arg);
+PyObject *BuildWrappedJSObject(Napi::Env env, Napi::Value arg);
 PyObject *BuildPyArgs(const Napi::CallbackInfo &info, size_t start_index, size_t count);
 
 // Python to v8

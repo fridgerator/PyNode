@@ -1,4 +1,5 @@
 #include "helpers.hpp"
+#include "jswrapper.h"
 #include <iostream>
 
 bool isNapiValueInt(Napi::Env &env, Napi::Value &num) {
@@ -49,9 +50,15 @@ PyObject *BuildPyArray(Napi::Env env, Napi::Value arg) {
       PyObject *innerList = BuildPyArray(env, element);
       PyList_SetItem(list, i, innerList);
     } else if (element.IsObject()) {
-      // build py dict
+      // TODO - build either a dict or a wrapped object depending
+      // on whether it's a JavaScript object literal: https://stackoverflow.com/questions/5876332/how-can-i-differentiate-between-an-object-literal-other-javascript-objects
+      /* // build py dict
       PyObject *innerDict = BuildPyDict(env, element);
       PyList_SetItem(list, i, innerDict);
+      */
+      // build WrappedJSObject
+      PyObject *wrappedjsobj = BuildWrappedJSObject(env, element);
+      PyList_SetItem(list, i, wrappedjsobj);
     }
   }
 
@@ -81,12 +88,44 @@ PyObject *BuildPyDict(Napi::Env env, Napi::Value arg) {
       PyObject *innerList = BuildPyArray(env, val);
       PyDict_SetItem(dict, pykey, innerList);
     } else if (val.IsObject()) {
-      PyObject *innerDict = BuildPyDict(env, val);
-      PyDict_SetItem(dict, pykey, innerDict);
+      // TODO PyObject *innerDict = BuildPyDict(env, val);
+      PyObject *innerObject = BuildWrappedJSObject(env, val);
+      PyDict_SetItem(dict, pykey, innerObject);
     }
   }
 
   return dict;
+}
+
+PyObject *BuildWrappedJSObject(Napi::Env env, Napi::Value arg) {
+  auto obj = arg.As<Napi::Object>();
+  auto keys = obj.GetPropertyNames();
+  PyObject *pyobj = WrappedJSObject_New();
+  /*for (size_t i = 0; i < keys.Length(); i++) {
+    auto key = keys.Get(i);
+    std::string keyStr = key.ToString();
+    Napi::Value val = obj.Get(key);
+    PyObject *pykey = PyBytes_FromString(keyStr.c_str());
+    if (val.IsNumber()) {
+      double num = val.ToNumber();
+      if (isNapiValueInt(env, val)) {
+        PyDict_SetItem(dict, pykey, PyLong_FromLong(num));
+      } else {
+        PyDict_SetItem(dict, pykey, PyFloat_FromDouble(num));
+      }
+    } else if (val.IsString()) {
+      std::string str = val.ToString();
+      PyDict_SetItem(dict, pykey, PyBytes_FromString(str.c_str()));
+    } else if (val.IsArray()) {
+      PyObject *innerList = BuildPyArray(env, val);
+      PyDict_SetItem(dict, pykey, innerList);
+    } else if (val.IsObject()) {
+      PyObject *innerDict = BuildPyDict(env, val);
+      PyDict_SetItem(dict, pykey, innerDict);
+    }
+  }*/
+
+  return pyobj;
 }
 
 PyObject *BuildPyArgs(const Napi::CallbackInfo &args, size_t start_index, size_t count) {
@@ -116,8 +155,9 @@ PyObject *BuildPyArgs(const Napi::CallbackInfo &args, size_t start_index, size_t
       PyObject *list = BuildPyArray(env, arg);
       PyTuple_SetItem(pArgs, i - start_index, list);
     } else if (arg.IsObject()) {
-      PyObject *dict = BuildPyDict(env, arg);
-      PyTuple_SetItem(pArgs, i - start_index, dict);
+      // TODO PyObject *dict = BuildPyDict(env, arg);
+      PyObject *pyobj = BuildWrappedJSObject(env, arg);
+      PyTuple_SetItem(pArgs, i - start_index, pyobj);
     } else {
       std::cout << "Unknown arg type" << std::endl;
     }
