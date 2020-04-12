@@ -13,6 +13,32 @@ bool isNapiValueInt(Napi::Env &env, Napi::Value &num) {
       .Value();
 }
 
+/* Returns true if the value given is (roughly) an object literal,
+ * ie more appropriate as a Python dict than a WrappedJSObject.
+ *
+ * Based on https://stackoverflow.com/questions/5876332/how-can-i-differentiate-between-an-object-literal-other-javascript-objects
+ */
+bool isNapiValuePlainObject(Napi::Env &env, Napi::Value &obj) {
+    napi_value result;
+    napi_value plainobj_result;
+    napi_status status;
+
+    status = napi_get_prototype(env, obj, &result);
+    if (status != napi_ok) {
+        return false;
+    }
+
+    Napi::Object plainobj = Napi::Object::New(env);
+    status = napi_get_prototype(env, plainobj, &plainobj_result);
+    if (status != napi_ok) {
+        return false;
+    }
+
+    bool equal;
+    status = napi_strict_equals(env, result, plainobj_result, &equal);
+    return equal;
+}
+
 int Py_GetNumArguments(PyObject *pFunc) {
   PyObject *fc = PyObject_GetAttrString(pFunc, "__code__");
   if (fc) {
@@ -50,15 +76,15 @@ PyObject *BuildPyArray(Napi::Env env, Napi::Value arg) {
       PyObject *innerList = BuildPyArray(env, element);
       PyList_SetItem(list, i, innerList);
     } else if (element.IsObject()) {
-      // TODO - build either a dict or a wrapped object depending
-      // on whether it's a JavaScript object literal: https://stackoverflow.com/questions/5876332/how-can-i-differentiate-between-an-object-literal-other-javascript-objects
-      /* // build py dict
-      PyObject *innerDict = BuildPyDict(env, element);
-      PyList_SetItem(list, i, innerDict);
-      */
-      // build WrappedJSObject
-      PyObject *wrappedjsobj = BuildWrappedJSObject(env, element);
-      PyList_SetItem(list, i, wrappedjsobj);
+      if (isNapiValuePlainObject(env, element)) {
+        // build py dict
+        PyObject *innerDict = BuildPyDict(env, element);
+        PyList_SetItem(list, i, innerDict);
+      } else {
+        // build WrappedJSObject
+        PyObject *wrappedjsobj = BuildWrappedJSObject(env, element);
+        PyList_SetItem(list, i, wrappedjsobj);
+      }
     }
   }
 
@@ -88,8 +114,12 @@ PyObject *BuildPyDict(Napi::Env env, Napi::Value arg) {
       PyObject *innerList = BuildPyArray(env, val);
       PyDict_SetItem(dict, pykey, innerList);
     } else if (val.IsObject()) {
-      // TODO PyObject *innerDict = BuildPyDict(env, val);
-      PyObject *innerObject = BuildWrappedJSObject(env, val);
+      PyObject *innerObject;
+      if (isNapiValuePlainObject(env, val)) {
+        innerObject = BuildPyDict(env, val);
+      } else {
+        innerObject = BuildWrappedJSObject(env, val);
+      }
       PyDict_SetItem(dict, pykey, innerObject);
     }
   }
@@ -155,8 +185,12 @@ PyObject *BuildPyArgs(const Napi::CallbackInfo &args, size_t start_index, size_t
       PyObject *list = BuildPyArray(env, arg);
       PyTuple_SetItem(pArgs, i - start_index, list);
     } else if (arg.IsObject()) {
-      // TODO PyObject *dict = BuildPyDict(env, arg);
-      PyObject *pyobj = BuildWrappedJSObject(env, arg);
+      PyObject * pyobj;
+      if (isNapiValuePlainObject(env, arg)) {
+        pyobj = BuildPyDict(env, arg);
+      } else {
+        pyobj = BuildWrappedJSObject(env, arg);
+      }
       PyTuple_SetItem(pArgs, i - start_index, pyobj);
     } else {
       std::cout << "Unknown arg type" << std::endl;
