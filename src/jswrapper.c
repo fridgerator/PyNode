@@ -66,6 +66,31 @@ static PyMethodDef WrappedJSObject_methods[] = {
     {NULL}, /* Sentinel */
 };
 
+static PyObject *
+WrappedJSObject_getattro(PyObject *_self, PyObject *attr)
+{
+    WrappedJSObject *self = (WrappedJSObject*)_self;
+    napi_value wrapped;
+    bool hasattr;
+    const char * utf8name = PyUnicode_AsUTF8(attr);
+    napi_value result;
+    napi_get_reference_value(self->env, self->object_reference, &wrapped);
+    napi_has_named_property(self->env, wrapped, utf8name, &hasattr);
+    if (hasattr) {
+        napi_get_named_property(self->env, wrapped, utf8name, &result);
+        printf("got property\n");// TODO convert to Python
+    }
+    PyErr_SetObject(PyExc_AttributeError, attr);
+    return NULL;
+}
+
+static PyObject *
+WrappedJSObject_call(PyObject *self, PyObject *args, PyObject *kwargs)
+{
+    //printf("__call__ called\n");
+    Py_RETURN_NONE;
+}
+
 static PyTypeObject WrappedJSType = {
     PyVarObject_HEAD_INIT(NULL, 0)
     .tp_name = "pynode.WrappedJSObject",
@@ -78,6 +103,8 @@ static PyTypeObject WrappedJSType = {
     .tp_dealloc = (destructor) WrappedJSObject_dealloc,
     .tp_members = WrappedJSObject_members,
     .tp_methods = WrappedJSObject_methods,
+    .tp_call = WrappedJSObject_call,
+    .tp_getattro = WrappedJSObject_getattro,
 };
 
 PyObject *WrappedJSObject_New(napi_env env, napi_value value) {

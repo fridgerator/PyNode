@@ -128,33 +128,7 @@ PyObject *BuildPyDict(Napi::Env env, Napi::Value arg) {
 }
 
 PyObject *BuildWrappedJSObject(Napi::Env env, Napi::Value arg) {
-  auto obj = arg.As<Napi::Object>();
-  auto keys = obj.GetPropertyNames();
   PyObject *pyobj = WrappedJSObject_New(env, arg);
-  /*for (size_t i = 0; i < keys.Length(); i++) {
-    auto key = keys.Get(i);
-    std::string keyStr = key.ToString();
-    Napi::Value val = obj.Get(key);
-    PyObject *pykey = PyBytes_FromString(keyStr.c_str());
-    if (val.IsNumber()) {
-      double num = val.ToNumber();
-      if (isNapiValueInt(env, val)) {
-        PyDict_SetItem(dict, pykey, PyLong_FromLong(num));
-      } else {
-        PyDict_SetItem(dict, pykey, PyFloat_FromDouble(num));
-      }
-    } else if (val.IsString()) {
-      std::string str = val.ToString();
-      PyDict_SetItem(dict, pykey, PyBytes_FromString(str.c_str()));
-    } else if (val.IsArray()) {
-      PyObject *innerList = BuildPyArray(env, val);
-      PyDict_SetItem(dict, pykey, innerList);
-    } else if (val.IsObject()) {
-      PyObject *innerDict = BuildPyDict(env, val);
-      PyDict_SetItem(dict, pykey, innerDict);
-    }
-  }*/
-
   return pyobj;
 }
 
