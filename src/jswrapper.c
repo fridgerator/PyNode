@@ -5,14 +5,28 @@
 typedef struct {
     PyObject_HEAD
     /* Type-specific fields go here. */
-    void * wrapped_object;
+    napi_ref object_reference;
+    napi_env env;
 } WrappedJSObject;
 
 static void
 WrappedJSObject_dealloc(WrappedJSObject *self)
 {
-    // TODO - decref wrapped_object
+    if (self->object_reference != NULL) {
+        napi_delete_reference(self->env, self->object_reference);
+        self->object_reference = NULL;
+    }
     Py_TYPE(self)->tp_free((PyObject *) self);
+}
+
+static void
+WrappedJSObject_assign_napi_value(WrappedJSObject *self, napi_env env, napi_value value) {
+    self->env = env;
+    if (self->object_reference != NULL) {
+        napi_delete_reference(env, self->object_reference);
+        self->object_reference = NULL;
+    }
+    napi_create_reference(env, value, 1, &(self->object_reference));
 }
 
 static PyObject *
@@ -20,7 +34,8 @@ WrappedJSObject_new(PyTypeObject *type, PyObject *args, PyObject *kwds) {
     WrappedJSObject *self;
     self = (WrappedJSObject *) type->tp_alloc(type, 0);
     if (self != NULL) {
-        self->wrapped_object = NULL;
+        self->object_reference = NULL;
+        self->env = NULL;
     }
     return (PyObject *) self;
 }
@@ -65,10 +80,21 @@ static PyTypeObject WrappedJSType = {
     .tp_methods = WrappedJSObject_methods,
 };
 
-PyObject *WrappedJSObject_New() {
-    WrappedJSObject *obj = PyObject_NEW(WrappedJSObject, &WrappedJSType);
-    printf("Created new object\n");
-    return (PyObject *)obj;
+PyObject *WrappedJSObject_New(napi_env env, napi_value value) {
+    /* Pass an empty argument list */
+    PyObject *argList = Py_BuildValue("()");
+
+    /* Call the class object. */
+    PyObject *obj = PyObject_CallObject((PyObject *) &WrappedJSType, argList);
+    if (obj == NULL) {
+        PyErr_Print();
+    }
+
+    /* Release the argument list. */
+    Py_DECREF(argList);
+
+    WrappedJSObject_assign_napi_value((WrappedJSObject*)obj, env, value);
+    return obj;
 }
 
 static PyModuleDef pynodemodule = {

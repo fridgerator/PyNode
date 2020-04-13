@@ -130,7 +130,7 @@ PyObject *BuildPyDict(Napi::Env env, Napi::Value arg) {
 PyObject *BuildWrappedJSObject(Napi::Env env, Napi::Value arg) {
   auto obj = arg.As<Napi::Object>();
   auto keys = obj.GetPropertyNames();
-  PyObject *pyobj = WrappedJSObject_New();
+  PyObject *pyobj = WrappedJSObject_New(env, arg);
   /*for (size_t i = 0; i < keys.Length(); i++) {
     auto key = keys.Get(i);
     std::string keyStr = key.ToString();
