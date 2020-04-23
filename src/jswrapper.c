@@ -79,6 +79,10 @@ WrappedJSObject_getattro(PyObject *_self, PyObject *attr)
     if (hasattr) {
         napi_get_named_property(self->env, wrapped, utf8name, &result);
         printf("got property\n");// TODO convert to Python
+        PyObject *pyval = convert_napi_value_to_python(self->env, result);
+        if (pyval != NULL) {
+            return pyval;
+        }
     }
     PyErr_SetObject(PyExc_AttributeError, attr);
     return NULL;

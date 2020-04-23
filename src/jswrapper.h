@@ -3,6 +3,7 @@
 
 #include <Python.h>
 #include <node_api.h>
+#include "helpers.h"
 
 #ifdef __cplusplus
 extern "C" {

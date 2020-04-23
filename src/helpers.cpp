@@ -59,32 +59,9 @@ PyObject *BuildPyArray(Napi::Env env, Napi::Value arg) {
 
   for (size_t i = 0; i < arr.Length(); i++) {
     auto element = arr.Get(i);
-    if (element.IsNumber()) {
-      double num = element.ToNumber();
-      if (isNapiValueInt(env, element)) {
-        PyList_SetItem(list, i, PyLong_FromLong(num));
-      } else {
-        PyList_SetItem(list, i, PyFloat_FromDouble(num));
-      }
-    } else if (element.IsString()) {
-      std::string str = element.As<Napi::String>().ToString();
-      PyList_SetItem(list, i, PyBytes_FromString(str.c_str()));
-    } else if (element.IsBoolean()) {
-      bool b = element.ToBoolean();
-      PyList_SetItem(list, i, PyBool_FromLong(b));
-    } else if (element.IsArray()) {
-      PyObject *innerList = BuildPyArray(env, element);
-      PyList_SetItem(list, i, innerList);
-    } else if (element.IsObject()) {
-      if (isNapiValuePlainObject(env, element)) {
-        // build py dict
-        PyObject *innerDict = BuildPyDict(env, element);
-        PyList_SetItem(list, i, innerDict);
-      } else {
-        // build WrappedJSObject
-        PyObject *wrappedjsobj = BuildWrappedJSObject(env, element);
-        PyList_SetItem(list, i, wrappedjsobj);
-      }
+    PyObject * pyval = ConvertToPython(element);
+    if (pyval != NULL) {
+      PyList_SetItem(list, i, pyval);
     }
   }
 
@@ -99,28 +76,10 @@ PyObject *BuildPyDict(Napi::Env env, Napi::Value arg) {
     auto key = keys.Get(i);
     std::string keyStr = key.ToString();
     Napi::Value val = obj.Get(key);
-    PyObject *pykey = PyBytes_FromString(keyStr.c_str());
-    if (val.IsNumber()) {
-      double num = val.ToNumber();
-      if (isNapiValueInt(env, val)) {
-        PyDict_SetItem(dict, pykey, PyLong_FromLong(num));
-      } else {
-        PyDict_SetItem(dict, pykey, PyFloat_FromDouble(num));
-      }
-    } else if (val.IsString()) {
-      std::string str = val.ToString();
-      PyDict_SetItem(dict, pykey, PyBytes_FromString(str.c_str()));
-    } else if (val.IsArray()) {
-      PyObject *innerList = BuildPyArray(env, val);
-      PyDict_SetItem(dict, pykey, innerList);
-    } else if (val.IsObject()) {
-      PyObject *innerObject;
-      if (isNapiValuePlainObject(env, val)) {
-        innerObject = BuildPyDict(env, val);
-      } else {
-        innerObject = BuildWrappedJSObject(env, val);
-      }
-      PyDict_SetItem(dict, pykey, innerObject);
+    PyObject *pykey = PyUnicode_FromString(keyStr.c_str());
+    PyObject *pyval = ConvertToPython(val);
+    if (pyval != NULL) {
+      PyDict_SetItem(dict, pykey, pyval);
     }
   }
 
@@ -133,45 +92,57 @@ PyObject *BuildWrappedJSObject(Napi::Env env, Napi::Value arg) {
 }
 
 PyObject *BuildPyArgs(const Napi::CallbackInfo &args, size_t start_index, size_t count) {
-  Napi::Env env = args.Env();
-  // Arguments length minus 2: one for function name, one for js callback
   PyObject *pArgs = PyTuple_New(count);
   for (size_t i = start_index; i < start_index + count; i++) {
     auto arg = args[i];
+    PyObject *pyobj = ConvertToPython(arg);
+    if (pyobj != NULL) {
+      PyTuple_SetItem(pArgs, i - start_index, pyobj);
+    }
+  }
+
+  return pArgs;
+}
+
+PyObject * ConvertToPython(Napi::Value arg) {
+    Napi::Env env = arg.Env();
     if (arg.IsNumber()) {
       double num = arg.As<Napi::Number>().ToNumber();
       if (isNapiValueInt(env, arg)) {
-        PyTuple_SetItem(pArgs, i - start_index, PyLong_FromLong(num));
+        return PyLong_FromLong(num);
       } else {
-        PyTuple_SetItem(pArgs, i - start_index, PyFloat_FromDouble(num));
+        return PyFloat_FromDouble(num);
       }
     } else if (arg.IsString()) {
       std::string str = arg.As<Napi::String>().ToString();
-      PyTuple_SetItem(pArgs, i - start_index, PyUnicode_FromString(str.c_str()));
+      return PyUnicode_FromString(str.c_str());
     } else if (arg.IsBoolean()) {
       long b = arg.As<Napi::Boolean>().ToBoolean();
-      PyTuple_SetItem(pArgs, i - start_index, PyBool_FromLong(b));
+      return PyBool_FromLong(b);
       // } else if (arg.IsDate()) {
       //   printf("Dates dont work yet");
       //   // Nan::ThrowError("Dates dont work yet");
       //   throw Napi::Error::New(args.Env(), "Dates dont work  yet");
     } else if (arg.IsArray()) {
-      PyObject *list = BuildPyArray(env, arg);
-      PyTuple_SetItem(pArgs, i - start_index, list);
+      return BuildPyArray(env, arg);
     } else if (arg.IsObject()) {
-      PyObject * pyobj;
       if (isNapiValuePlainObject(env, arg)) {
-        pyobj = BuildPyDict(env, arg);
+        return BuildPyDict(env, arg);
       } else {
-        pyobj = BuildWrappedJSObject(env, arg);
+        return BuildWrappedJSObject(env, arg);
       }
-      PyTuple_SetItem(pArgs, i - start_index, pyobj);
     } else {
       std::cout << "Unknown arg type" << std::endl;
+      // TODO raise an exception here instead
+      return NULL;
     }
-  }
+}
 
-  return pArgs;
+extern "C" {
+    PyObject * convert_napi_value_to_python(napi_env env, napi_value value) {
+        Napi::Value cpp_value = Napi::Value(env, value);
+        return ConvertToPython(cpp_value);
+    }
 }
 
 Napi::Array BuildV8Array(Napi::Env env, PyObject *obj) {

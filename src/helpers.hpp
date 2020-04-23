@@ -3,6 +3,7 @@
 
 #include "napi.h"
 #include "pywrapper.hpp"
+#include "helpers.h"
 #include <Python.h>
 
 class py_context {
@@ -25,6 +26,7 @@ PyObject *BuildPyArray(Napi::Env env, Napi::Value arg);
 PyObject *BuildPyDict(Napi::Env env, Napi::Value arg);
 PyObject *BuildWrappedJSObject(Napi::Env env, Napi::Value arg);
 PyObject *BuildPyArgs(const Napi::CallbackInfo &info, size_t start_index, size_t count);
+PyObject *ConvertToPython(Napi::Value);
 
 // Python to v8
 Napi::Array BuildV8Array(Napi::Env env, PyObject *obj);
