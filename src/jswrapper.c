@@ -78,7 +78,6 @@ WrappedJSObject_getattro(PyObject *_self, PyObject *attr)
     napi_has_named_property(self->env, wrapped, utf8name, &hasattr);
     if (hasattr) {
         napi_get_named_property(self->env, wrapped, utf8name, &result);
-        printf("got property\n");// TODO convert to Python
         PyObject *pyval = convert_napi_value_to_python(self->env, result);
         if (pyval != NULL) {
             return pyval;
@@ -89,10 +88,36 @@ WrappedJSObject_getattro(PyObject *_self, PyObject *attr)
 }
 
 static PyObject *
-WrappedJSObject_call(PyObject *self, PyObject *args, PyObject *kwargs)
+WrappedJSObject_call(PyObject *_self, PyObject *args, PyObject *kwargs)
 {
-    //printf("__call__ called\n");
-    Py_RETURN_NONE;
+    WrappedJSObject *self = (WrappedJSObject*)_self;
+    napi_value result;
+    napi_value global;
+    napi_status status;
+    napi_value wrapped;
+    size_t argc = 0;
+    napi_value * argv;
+
+    napi_get_reference_value(self->env, self->object_reference, &wrapped);
+
+    status = napi_get_global(self->env, &global);
+    if (status != napi_ok) {
+        PyErr_SetString(PyExc_RuntimeError, "Error getting JS global environment");
+        return NULL;
+    }
+
+    status = napi_call_function(self->env, global, wrapped, argc, argv, &result);
+    if (status != napi_ok) {
+        PyErr_SetString(PyExc_RuntimeError, "Error calling javascript function");
+        return NULL;
+    }
+
+    PyObject *pyval = convert_napi_value_to_python(self->env, result);
+    if (pyval == NULL) {
+        PyErr_SetString(PyExc_RuntimeError, "Error converting JS return value to Python");
+        return NULL;
+    }
+    return pyval;
 }
 
 static PyTypeObject WrappedJSType = {

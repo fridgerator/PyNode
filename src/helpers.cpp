@@ -131,10 +131,12 @@ PyObject * ConvertToPython(Napi::Value arg) {
       } else {
         return BuildWrappedJSObject(env, arg);
       }
+    } else if (arg.IsNull() || arg.IsUndefined()) {
+      Py_RETURN_NONE;
     } else {
-      std::cout << "Unknown arg type" << std::endl;
-      // TODO raise an exception here instead
-      return NULL;
+      Napi::String string = arg.ToString();
+      std::cout << "Unknown arg type" << string.Utf8Value() << std::endl;
+      throw Napi::Error::New(arg.Env(), "Unknown arg type");
     }
 }
 
