@@ -91,33 +91,56 @@ static PyObject *
 WrappedJSObject_call(PyObject *_self, PyObject *args, PyObject *kwargs)
 {
     WrappedJSObject *self = (WrappedJSObject*)_self;
+    PyObject * ret = NULL;
+    PyObject * seq;
+    Py_ssize_t len = 0, i;
     napi_value result;
     napi_value global;
     napi_status status;
     napi_value wrapped;
-    size_t argc = 0;
-    napi_value * argv;
+    napi_value * jsargs = NULL;
+
+    seq = PySequence_Fast(args, "*args must be a sequence");
+    len = PySequence_Size(args);
+    jsargs = calloc(len, sizeof(napi_value));
+    if (jsargs == NULL) {
+        PyErr_SetString(PyExc_MemoryError, "Out of memory allocating JS args array");
+        goto finally;
+    }
+    for (i = 0; i < len; i++) {
+        PyObject *arg = PySequence_Fast_GET_ITEM(seq, i);
+        napi_value jsarg = convert_python_to_napi_value(self->env, arg);
+        jsargs[i] = jsarg;
+    }
+    Py_DECREF(seq);
 
     napi_get_reference_value(self->env, self->object_reference, &wrapped);
 
     status = napi_get_global(self->env, &global);
     if (status != napi_ok) {
         PyErr_SetString(PyExc_RuntimeError, "Error getting JS global environment");
-        return NULL;
+        goto finally;
     }
 
-    status = napi_call_function(self->env, global, wrapped, argc, argv, &result);
+    status = napi_call_function(self->env, global, wrapped, len, jsargs, &result);
     if (status != napi_ok) {
         PyErr_SetString(PyExc_RuntimeError, "Error calling javascript function");
-        return NULL;
+        goto finally;
     }
 
     PyObject *pyval = convert_napi_value_to_python(self->env, result);
     if (pyval == NULL) {
         PyErr_SetString(PyExc_RuntimeError, "Error converting JS return value to Python");
-        return NULL;
+        goto finally;
     }
-    return pyval;
+    ret = pyval;
+
+finally:
+    if (jsargs != NULL) {
+        free(jsargs);
+        jsargs = NULL;
+    }
+    return ret;
 }
 
 static PyTypeObject WrappedJSType = {

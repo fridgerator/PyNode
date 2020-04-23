@@ -267,3 +267,10 @@ Napi::Value ConvertFromPython(Napi::Env env, PyObject * pValue) {
     }
     return result;
 }
+
+extern "C" {
+    napi_value convert_python_to_napi_value(napi_env env, PyObject * obj) {
+        return ConvertFromPython(env, obj);
+    }
+}
+
