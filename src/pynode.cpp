@@ -124,6 +124,37 @@ Napi::Value OpenFile(const Napi::CallbackInfo &info) {
   return env.Null();
 }
 
+Napi::Value ImportModule(const Napi::CallbackInfo &info) {
+  Napi::Env env = info.Env();
+
+  if (!info[0] || !info[0].IsString()) {
+    Napi::Error::New(env, "Must pass a string to 'import'")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+
+  std::string moduleName = info[0].As<Napi::String>().ToString();
+
+  {
+    py_context ctx;
+
+    PyObject *pName;
+    pName = PyUnicode_FromString(moduleName.c_str());
+    PyObject *module_object = PyImport_Import(pName);
+    Py_DECREF(pName);
+
+    if (module_object == NULL) {
+      PyErr_Print();
+      std::cerr << "Failed to load module: " << moduleName << std::endl;
+      Napi::Error::New(env, "Failed to load python module")
+          .ThrowAsJavaScriptException();
+    }
+    return ConvertFromPython(env, module_object);
+  }
+
+  return env.Null();
+}
+
 Napi::Value Eval(const Napi::CallbackInfo &info) {
   Napi::Env env = info.Env();
 
@@ -216,6 +247,9 @@ Napi::Object PyNodeInit(Napi::Env env, Napi::Object exports) {
 
   exports.Set(Napi::String::New(env, "openFile"),
               Napi::Function::New(env, OpenFile));
+
+  exports.Set(Napi::String::New(env, "import"),
+              Napi::Function::New(env, ImportModule));
 
   exports.Set(Napi::String::New(env, "eval"), Napi::Function::New(env, Eval));
 
