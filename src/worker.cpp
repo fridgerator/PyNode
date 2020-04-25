@@ -10,7 +10,7 @@ PyNodeWorker::~PyNodeWorker(){};
 
 void PyNodeWorker::Execute() {
   {
-    py_context ctx;
+    py_thread_context ctx;
 
     pValue = PyObject_CallObject(pFunc, pyArgs);
     Py_DECREF(pyArgs);
@@ -47,7 +47,7 @@ void PyNodeWorker::Execute() {
 }
 
 void PyNodeWorker::OnOK() {
-  py_context ctx;
+  py_thread_context ctx;
   Napi::HandleScope scope(Env());
 
   std::vector<Napi::Value> result = {Env().Null(), Env().Null()};

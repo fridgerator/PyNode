@@ -34,7 +34,7 @@ PyNodeWrappedPythonObject::PyNodeWrappedPythonObject(const Napi::CallbackInfo &i
 Napi::FunctionReference PyNodeWrappedPythonObject::constructor;
 
 Napi::Value PyNodeWrappedPythonObject::GetAttr(const Napi::CallbackInfo &info){
-    py_context ctx;
+    py_ensure_gil ctx;
     Napi::Env env = info.Env();
     std::string attrname = info[0].As<Napi::String>().ToString();
     PyObject * attr = PyObject_GetAttrString(this->_value, attrname.c_str());
@@ -48,7 +48,7 @@ Napi::Value PyNodeWrappedPythonObject::GetAttr(const Napi::CallbackInfo &info){
 }
 
 Napi::Value PyNodeWrappedPythonObject::Call(const Napi::CallbackInfo &info){
-    py_context ctx;
+    py_ensure_gil ctx;
     Napi::Env env = info.Env();
     int callable = PyCallable_Check(this->_value);
     if (! callable) {
@@ -73,7 +73,7 @@ Napi::Value PyNodeWrappedPythonObject::Call(const Napi::CallbackInfo &info){
 }
 
 Napi::Value PyNodeWrappedPythonObject::Repr(const Napi::CallbackInfo &info){
-    py_context ctx;
+    py_ensure_gil ctx;
     Napi::Env env = info.Env();
     std::string attrname = info[0].As<Napi::String>().ToString();
     PyObject * repr = PyObject_Repr(this->_value);

@@ -43,6 +43,9 @@ Napi::Value StartInterpreter(const Napi::CallbackInfo &info) {
         .ThrowAsJavaScriptException();
   }
 
+  /* Release the GIL. The other entry points back into Python re-acquire it */
+  PyEval_SaveThread();
+
   return env.Null();
 }
 
@@ -86,7 +89,7 @@ Napi::Value AppendSysPath(const Napi::CallbackInfo &info) {
            pathName.c_str());
 
   {
-    py_context ctx;
+    py_ensure_gil ctx;
     PyRun_SimpleString(appendPathStr);
     free(appendPathStr);
   }
@@ -106,7 +109,7 @@ Napi::Value OpenFile(const Napi::CallbackInfo &info) {
   std::string fileName = info[0].As<Napi::String>().ToString();
 
   {
-    py_context ctx;
+    py_ensure_gil ctx;
 
     PyObject *pName;
     pName = PyUnicode_DecodeFSDefault(fileName.c_str());
@@ -136,7 +139,7 @@ Napi::Value ImportModule(const Napi::CallbackInfo &info) {
   std::string moduleName = info[0].As<Napi::String>().ToString();
 
   {
-    py_context ctx;
+    py_ensure_gil ctx;
 
     PyObject *pName;
     pName = PyUnicode_FromString(moduleName.c_str());
@@ -167,7 +170,7 @@ Napi::Value Eval(const Napi::CallbackInfo &info) {
   std::string statement = info[0].As<Napi::String>().ToString();
   int response;
   {
-    py_context ctx;
+    py_ensure_gil ctx;
 
     response = PyRun_SimpleString(statement.c_str());
   }
@@ -197,7 +200,8 @@ Napi::Value Call(const Napi::CallbackInfo &info) {
   PyObject *pFunc, *pArgs;
 
   {
-    py_context ctx;
+      printf("getting gil\n");
+    py_ensure_gil ctx;
 
     pFunc = PyObject_GetAttrString(pModule, functionName.c_str());
     int callable = PyCallable_Check(pFunc);
