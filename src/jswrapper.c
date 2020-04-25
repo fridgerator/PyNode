@@ -19,6 +19,13 @@ WrappedJSObject_dealloc(WrappedJSObject *self)
     Py_TYPE(self)->tp_free((PyObject *) self);
 }
 
+napi_value WrappedJSObject_get_napi_value(PyObject *_self) {
+    WrappedJSObject *self = (WrappedJSObject *)_self;
+    napi_value wrapped;
+    napi_get_reference_value(self->env, self->object_reference, &wrapped);
+    return wrapped;
+}
+
 static void
 WrappedJSObject_assign_napi_value(WrappedJSObject *self, napi_env env, napi_value value) {
     self->env = env;

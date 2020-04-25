@@ -260,6 +260,9 @@ Napi::Value ConvertFromPython(Napi::Env env, PyObject * pValue) {
     } else if (strcmp(pValue->ob_type->tp_name, "dict") == 0) {
       auto obj = BuildV8Dict(env, pValue);
       result = obj;
+    } else if (strcmp(pValue->ob_type->tp_name, "pynode.WrappedJSObject") == 0) {
+      auto obj = Napi::Value(env, WrappedJSObject_get_napi_value(pValue));
+      result = obj;
     } else {
       auto exp = Napi::External<PyObject>::New(env, pValue);
       auto obj = PyNodeWrappedPythonObject::constructor.New({exp});
