@@ -143,6 +143,36 @@ finally:
     return ret;
 }
 
+PyObject * WrappedJSObject_str(PyObject *_self) {
+    WrappedJSObject *self = (WrappedJSObject *)_self;
+    napi_value global;
+    napi_value result;
+    napi_value wrapped;
+    napi_status status;
+
+    status = napi_get_global(self->env, &global);
+    if (status != napi_ok) {
+        PyErr_SetString(PyExc_RuntimeError, "Error getting JS global environment");
+        Py_RETURN_NONE;
+    }
+
+    napi_get_reference_value(self->env, self->object_reference, &wrapped);
+
+    status = napi_coerce_to_string(self->env, wrapped, &result);
+    if (status != napi_ok) {
+        PyErr_SetString(PyExc_RuntimeError, "Error coercing javascript value to string");
+        Py_RETURN_NONE;
+    }
+
+    /* Result should just be a JavaScript string at this point */
+    PyObject *pyval = convert_napi_value_to_python(self->env, result);
+    if (pyval == NULL) {
+        PyErr_SetString(PyExc_RuntimeError, "Error converting JavaScript ToString item to Python");
+        Py_RETURN_NONE;
+    }
+    return pyval;
+}
+
 static PyTypeObject WrappedJSType = {
     PyVarObject_HEAD_INIT(NULL, 0)
     .tp_name = "pynode.WrappedJSObject",
@@ -157,6 +187,7 @@ static PyTypeObject WrappedJSType = {
     .tp_methods = WrappedJSObject_methods,
     .tp_call = WrappedJSObject_call,
     .tp_getattro = WrappedJSObject_getattro,
+    .tp_str = WrappedJSObject_str,
 };
 
 PyObject *WrappedJSObject_New(napi_env env, napi_value value) {
