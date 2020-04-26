@@ -7,6 +7,7 @@ typedef struct {
     /* Type-specific fields go here. */
     napi_ref object_reference;
     napi_env env;
+    napi_value bound;
 } WrappedJSObject;
 
 static void
@@ -43,6 +44,7 @@ WrappedJSObject_new(PyTypeObject *type, PyObject *args, PyObject *kwds) {
     if (self != NULL) {
         self->object_reference = NULL;
         self->env = NULL;
+        self->bound = NULL;
     }
     return (PyObject *) self;
 }
@@ -78,15 +80,24 @@ WrappedJSObject_getattro(PyObject *_self, PyObject *attr)
 {
     WrappedJSObject *self = (WrappedJSObject*)_self;
     napi_value wrapped;
+    napi_valuetype type;
     bool hasattr;
     const char * utf8name = PyUnicode_AsUTF8(attr);
     napi_value result;
     napi_get_reference_value(self->env, self->object_reference, &wrapped);
     napi_has_named_property(self->env, wrapped, utf8name, &hasattr);
     if (hasattr) {
+        bool isfunc;
         napi_get_named_property(self->env, wrapped, utf8name, &result);
+        napi_typeof(self->env, result, &type);
+        isfunc = (type == napi_function);
+
         PyObject *pyval = convert_napi_value_to_python(self->env, result);
         if (pyval != NULL) {
+            if (isfunc) {
+                /* "bind" the method to its instance */
+                ((WrappedJSObject *)pyval)->bound = wrapped;
+            }
             return pyval;
         }
     }
@@ -102,7 +113,7 @@ WrappedJSObject_call(PyObject *_self, PyObject *args, PyObject *kwargs)
     PyObject * seq;
     Py_ssize_t len = 0, i;
     napi_value result;
-    napi_value global;
+    napi_value this;
     napi_status status;
     napi_value wrapped;
     napi_value * jsargs = NULL;
@@ -123,13 +134,17 @@ WrappedJSObject_call(PyObject *_self, PyObject *args, PyObject *kwargs)
 
     napi_get_reference_value(self->env, self->object_reference, &wrapped);
 
-    status = napi_get_global(self->env, &global);
-    if (status != napi_ok) {
-        PyErr_SetString(PyExc_RuntimeError, "Error getting JS global environment");
-        goto finally;
+    if (self->bound != NULL) {
+        this = self->bound;
+    } else {
+        status = napi_get_global(self->env, &this);
+        if (status != napi_ok) {
+            PyErr_SetString(PyExc_RuntimeError, "Error getting JS global environment");
+            goto finally;
+        }
     }
 
-    status = napi_call_function(self->env, global, wrapped, len, jsargs, &result);
+    status = napi_call_function(self->env, this, wrapped, len, jsargs, &result);
     if (status != napi_ok) {
         PyErr_SetString(PyExc_RuntimeError, "Error calling javascript function");
         goto finally;
