@@ -39,6 +39,10 @@ bool isNapiValuePlainObject(Napi::Env &env, Napi::Value &obj) {
     return equal;
 }
 
+bool isNapiValueWrappedPython(Napi::Env &env, Napi::Object obj) {
+    return obj.InstanceOf(PyNodeWrappedPythonObject::constructor.Value());
+}
+
 int Py_GetNumArguments(PyObject *pFunc) {
   PyObject *fc = PyObject_GetAttrString(pFunc, "__code__");
   if (fc) {
@@ -126,7 +130,12 @@ PyObject * ConvertToPython(Napi::Value arg) {
     } else if (arg.IsArray()) {
       return BuildPyArray(env, arg);
     } else if (arg.IsObject()) {
-      if (isNapiValuePlainObject(env, arg)) {
+      if (isNapiValueWrappedPython(env, arg.ToObject())) {
+        Napi::Object o = arg.ToObject();
+        PyNodeWrappedPythonObject *wrapper = Napi::ObjectWrap<PyNodeWrappedPythonObject>::Unwrap(o);
+        PyObject* pyobj = wrapper->getValue();
+        return pyobj;
+      } else if (isNapiValuePlainObject(env, arg)) {
         return BuildPyDict(env, arg);
       } else {
         return BuildWrappedJSObject(env, arg);

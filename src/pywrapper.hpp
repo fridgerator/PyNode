@@ -13,6 +13,7 @@ class PyNodeWrappedPythonObject : public Napi::ObjectWrap<PyNodeWrappedPythonObj
     Napi::Value Call(const Napi::CallbackInfo &info);
     Napi::Value GetAttr(const Napi::CallbackInfo &info);
     Napi::Value Repr(const Napi::CallbackInfo &info);
+    PyObject * getValue() { return _value; };
 
   private:
     PyObject * _value;
