@@ -6,7 +6,9 @@
         "src/main.cpp",
         "src/helpers.cpp",
         "src/pynode.cpp",
-        "src/worker.cpp"
+        "src/worker.cpp",
+        "src/pywrapper.cpp",
+        "src/jswrapper.c"
       ],
       'include_dirs': [
         "<!@(node -p \"require('node-addon-api').include\")"
@@ -14,6 +16,8 @@
       'dependencies': ["<!(node -p \"require('node-addon-api').gyp\")"],
       'cflags!': [ '-fno-exceptions' ],
       'cflags_cc!': [ '-fno-exceptions' ],
+      'cflags+': [ '-g' ],
+      'cflags_cc+': [ '-g' ],
       'xcode_settings': {
         'GCC_ENABLE_CPP_EXCEPTIONS': 'YES',
         'CLANG_CXX_LIBRARY': 'libc++',
@@ -44,8 +48,8 @@
         }],
         ['OS!="win"', {
           "variables": {
-            "PY_INCLUDE%": "<!(if [ -z \"$PY_INCLUDE\" ]; then echo $(python-config --includes); else echo $PY_INCLUDE; fi)",\
-            "PY_LIBS%": "<!(if [ -z \"$PY_LIBS\" ]; then echo $(python-config --ldflags); else echo $PY_LIBS; fi)"
+            "PY_INCLUDE%": "<!(if [ -z \"$PY_INCLUDE\" ]; then echo $(python build_include.py); else echo $PY_INCLUDE; fi)",\
+            "PY_LIBS%": "<!(if [ -z \"$PY_LIBS\" ]; then echo $(python build_ldflags.py); else echo $PY_LIBS; fi)"
           },
           "include_dirs": [
             "<(PY_INCLUDE)"

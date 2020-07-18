@@ -4,6 +4,8 @@
 #endif
 #include "helpers.hpp"
 #include "worker.hpp"
+#include "pywrapper.hpp"
+#include "jswrapper.h"
 #include <iostream>
 
 PyObject *pModule;
@@ -17,14 +19,32 @@ Napi::Value StartInterpreter(const Napi::CallbackInfo &info) {
     mbstowcs(&path[0], pathString.c_str(), pathString.length());
     Py_SetPath(path.c_str());
   }
+  
+  PyImport_AppendInittab("pynode", &PyInit_jswrapper);
 
   int isInitialized = Py_IsInitialized();
-  if (isInitialized == 0)
+  if (isInitialized == 0) {
     Py_Initialize();
+  }
 
   int threadsInitialized = PyEval_ThreadsInitialized();
   if (threadsInitialized == 0)
     PyEval_InitThreads();
+
+  /* Load PyNode's own module into Python. This makes WrappedJSObject instances
+     behave better (eg, having attributes) */
+  PyObject *pName;
+  pName = PyUnicode_DecodeFSDefault("pynode");
+  pModule = PyImport_Import(pName);
+  Py_DECREF(pName);
+  if (pModule == NULL) {
+    PyErr_Print();
+    Napi::Error::New(env, "Failed to load the pynode module into the Python interpreter")
+        .ThrowAsJavaScriptException();
+  }
+
+  /* Release the GIL. The other entry points back into Python re-acquire it */
+  PyEval_SaveThread();
 
   return env.Null();
 }
@@ -69,7 +89,7 @@ Napi::Value AppendSysPath(const Napi::CallbackInfo &info) {
            pathName.c_str());
 
   {
-    py_context ctx;
+    py_ensure_gil ctx;
     PyRun_SimpleString(appendPathStr);
     free(appendPathStr);
   }
@@ -89,7 +109,7 @@ Napi::Value OpenFile(const Napi::CallbackInfo &info) {
   std::string fileName = info[0].As<Napi::String>().ToString();
 
   {
-    py_context ctx;
+    py_ensure_gil ctx;
 
     PyObject *pName;
     pName = PyUnicode_DecodeFSDefault(fileName.c_str());
@@ -107,6 +127,37 @@ Napi::Value OpenFile(const Napi::CallbackInfo &info) {
   return env.Null();
 }
 
+Napi::Value ImportModule(const Napi::CallbackInfo &info) {
+  Napi::Env env = info.Env();
+
+  if (!info[0] || !info[0].IsString()) {
+    Napi::Error::New(env, "Must pass a string to 'import'")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+
+  std::string moduleName = info[0].As<Napi::String>().ToString();
+
+  {
+    py_ensure_gil ctx;
+
+    PyObject *pName;
+    pName = PyUnicode_FromString(moduleName.c_str());
+    PyObject *module_object = PyImport_Import(pName);
+    Py_DECREF(pName);
+
+    if (module_object == NULL) {
+      PyErr_Print();
+      std::cerr << "Failed to load module: " << moduleName << std::endl;
+      Napi::Error::New(env, "Failed to load python module")
+          .ThrowAsJavaScriptException();
+    }
+    return ConvertFromPython(env, module_object);
+  }
+
+  return env.Null();
+}
+
 Napi::Value Eval(const Napi::CallbackInfo &info) {
   Napi::Env env = info.Env();
 
@@ -119,7 +170,7 @@ Napi::Value Eval(const Napi::CallbackInfo &info) {
   std::string statement = info[0].As<Napi::String>().ToString();
   int response;
   {
-    py_context ctx;
+    py_ensure_gil ctx;
 
     response = PyRun_SimpleString(statement.c_str());
   }
@@ -149,7 +200,8 @@ Napi::Value Call(const Napi::CallbackInfo &info) {
   PyObject *pFunc, *pArgs;
 
   {
-    py_context ctx;
+      printf("getting gil\n");
+    py_ensure_gil ctx;
 
     pFunc = PyObject_GetAttrString(pModule, functionName.c_str());
     int callable = PyCallable_Check(pFunc);
@@ -167,9 +219,9 @@ Napi::Value Call(const Napi::CallbackInfo &info) {
         return env.Null();
       }
 
-      pArgs = BuildPyArgs(info);
+      // Arguments length minus 2: one for function name, one for js callback
+      pArgs = BuildPyArgs(info, 1, info.Length() - 2);
     } else {
-      std::cerr << "nope" << std::endl;
       Napi::Error::New(env,
                        "Could not find function name / function not callable")
           .ThrowAsJavaScriptException();
@@ -200,9 +252,14 @@ Napi::Object PyNodeInit(Napi::Env env, Napi::Object exports) {
   exports.Set(Napi::String::New(env, "openFile"),
               Napi::Function::New(env, OpenFile));
 
+  exports.Set(Napi::String::New(env, "import"),
+              Napi::Function::New(env, ImportModule));
+
   exports.Set(Napi::String::New(env, "eval"), Napi::Function::New(env, Eval));
 
   exports.Set(Napi::String::New(env, "call"), Napi::Function::New(env, Call));
+
+  PyNodeWrappedPythonObject::Init(env, exports);
 
   return exports;
 }

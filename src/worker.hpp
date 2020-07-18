@@ -2,6 +2,7 @@
 #define PYNODE_WORKER_HPP
 
 #include "Python.h"
+#include "pywrapper.hpp"
 #include "helpers.hpp"
 #include "napi.h"
 
