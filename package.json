@@ -11,9 +11,10 @@
     "python"
   ],
   "scripts": {
-    "install": "node-gyp rebuild",
+    "build": "node-gyp build",
     "compile": "node-gyp rebuild",
-    "test": "mocha"
+    "install": "node-gyp rebuild",
+    "test": "yarn build && mocha"
   },
   "dependencies": {
     "node-addon-api": "^1.7.1"

@@ -200,7 +200,6 @@ Napi::Value Call(const Napi::CallbackInfo &info) {
   PyObject *pFunc, *pArgs;
 
   {
-      printf("getting gil\n");
     py_ensure_gil ctx;
 
     pFunc = PyObject_GetAttrString(pModule, functionName.c_str());

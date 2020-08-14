@@ -30,9 +30,13 @@ void PyNodeWorker::Execute() {
         int line = PyCode_Addr2Line(frame->f_code, frame->f_lasti);
         const char *filename = PyUnicode_AsUTF8(frame->f_code->co_filename);
         const char *funcname = PyUnicode_AsUTF8(frame->f_code->co_name);
-        error.append("File \"" + std::string(filename) + "\", line " +
-                     std::to_string(line) + ", in " + std::string(funcname) +
+        if (filename) {
+          error.append("File \"" + std::string(filename) + "\"");
+        }
+        if (funcname) {
+          error.append(" Line " + std::to_string(line) + ", in " + std::string(funcname) +
                      "\n");
+        }
         error.append(std::string(type) + ": " + std::string(value));
         frame = frame->f_back;
       }
