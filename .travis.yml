@@ -6,6 +6,9 @@ node_js:
   - '10'
   - '12'
 before_install:
+  - which python
+  - python --version
+  - python build_include.py
   - sudo rm -f /usr/local/bin/python-config
   - sudo ln -s /opt/python/3.6.3/bin/python3-config /usr/local/bin/python-config
   - sudo ln -s /opt/python/3.6.3/include/python3.6m /usr/local/include/python3.6m
