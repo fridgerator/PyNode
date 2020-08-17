@@ -16,6 +16,7 @@
 * Install gyp-next: `git clone https://github.com/nodejs/gyp-next`; `cd gyp-next`; `python setup.py install`
 * `yarn add @fridgerator/pynode` or
 `npm install @fridgerator/pynode`
+* If your default `python` is version 2.7, then you may have to yarn install using additional env variables: `PY_INCLUDE=$(python3.6 build_include.py) PY_LIBS=$(python3.6 build_ldflags.py) yarn`
 
 ## Usage
 
