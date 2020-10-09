@@ -35,7 +35,7 @@
         }],
         ['OS=="win"', {
           "variables": {
-            "PY_HOME%": "<!(python -c \"import sysconfig;print(sysconfig.get_paths()['data'])\")"
+            "PY_HOME%": "<!(if [ -z \"$PY_HOME\" ]; then echo $(python -c \"import sysconfig;print(sysconfig.get_paths()['data'])\"); else echo $PY_HOME; fi)"
           },
           "include_dirs": [
             "<!(echo <(PY_HOME)\include)"
@@ -48,7 +48,7 @@
         }],
         ['OS!="win"', {
           "variables": {
-            "PY_INCLUDE%": "<!(if [ -z \"$PY_INCLUDE\" ]; then echo $(python build_include.py); else echo $PY_INCLUDE; fi)",\
+            "PY_INCLUDE%": "<!(if [ -z \"$PY_INCLUDE\" ]; then echo $(python build_include.py); else echo $PY_INCLUDE; fi)",
             "PY_LIBS%": "<!(if [ -z \"$PY_LIBS\" ]; then echo $(python build_ldflags.py); else echo $PY_LIBS; fi)"
           },
           "include_dirs": [
