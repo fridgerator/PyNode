@@ -22,7 +22,7 @@
 
 ### Async API
 
-In a python file `test.py`:
+In a python file `example.py`:
 
 ```python
 def add(a, b):
@@ -45,7 +45,7 @@ pynode.startInterpreter()
 pynode.appendSysPath('./')
 
 // open the python file (module)
-pynode.openFile('test')
+pynode.openFile('example')
 
 // call the python function and get a return value
 pynode.call('add', 1, 2, (err, result) => {
