@@ -35,14 +35,14 @@
         }],
         ['OS=="win"', {
           "variables": {
-            "PY_HOME%": "<!(if [ -z \"$PY_HOME\" ]; then echo $(python -c \"import sysconfig;print(sysconfig.get_paths()['data'])\"); else echo $PY_HOME; fi)"
+            "PY_HOME%": "<!(IF NOT DEFINED PY_HOME (python -c \"import sysconfig;print(sysconfig.get_paths()['data'])\") ELSE (echo %PY_HOME%))"
           },
           "include_dirs": [
-            "<!(echo <(PY_HOME)\include)"
+            "<!(echo <(PY_HOME)\\include)"
           ],
           "msvs_settings": {
             "VCLinkerTool": {
-              "AdditionalLibraryDirectories": "<!(echo <(PY_HOME)\libs)"
+              "AdditionalLibraryDirectories": "<!(echo <(PY_HOME)\\libs)"
             }
           }
         }],
