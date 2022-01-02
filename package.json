@@ -17,7 +17,8 @@
     "test": "yarn build && mocha"
   },
   "dependencies": {
-    "node-addon-api": "^1.7.1"
+    "node-addon-api": "^1.7.1",
+    "pangyp": "^2.3.3"
   },
   "devDependencies": {
     "chai": "^4.2.0",
