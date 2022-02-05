@@ -1,7 +1,7 @@
 {
   "name": "@fridgerator/pynode",
-  "version": "0.5.1",
-  "description": "Node <-> Python interopability",
+  "version": "0.5.2",
+  "description": "Node <-> Python interoperability",
   "main": "build/Release/PyNode",
   "author": "Nick Franken <shnick@gmail.com>",
   "license": "MIT",

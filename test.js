@@ -261,6 +261,12 @@ describe('nodePython', () => {
     })
   })
 
+  describe('duplicate startInterpreter', () => {
+      it('No error should happen when calling startInterpreter again', () => {
+          nodePython.startInterpreter();
+      });
+  })
+
   // describe('stopInterpreter', () => {
   //   it('should stop the interpreter', () => {
   //     nodePython.stopInterpreter()
