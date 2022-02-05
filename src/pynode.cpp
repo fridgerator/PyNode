@@ -19,7 +19,7 @@ Napi::Value StartInterpreter(const Napi::CallbackInfo &info) {
     mbstowcs(&path[0], pathString.c_str(), pathString.length());
     Py_SetPath(path.c_str());
   }
-  
+
   PyImport_AppendInittab("pynode", &PyInit_jswrapper);
 
   int isInitialized = Py_IsInitialized();
@@ -30,6 +30,9 @@ Napi::Value StartInterpreter(const Napi::CallbackInfo &info) {
   int threadsInitialized = PyEval_ThreadsInitialized();
   if (threadsInitialized == 0)
     PyEval_InitThreads();
+
+  /* Ensure GIL */
+  py_thread_context ctx;
 
   /* Load PyNode's own module into Python. This makes WrappedJSObject instances
      behave better (eg, having attributes) */
@@ -42,9 +45,6 @@ Napi::Value StartInterpreter(const Napi::CallbackInfo &info) {
     Napi::Error::New(env, "Failed to load the pynode module into the Python interpreter")
         .ThrowAsJavaScriptException();
   }
-
-  /* Release the GIL. The other entry points back into Python re-acquire it */
-  PyEval_SaveThread();
 
   return env.Null();
 }
