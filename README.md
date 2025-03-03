@@ -1,3 +1,5 @@
+# I'm not maintaining this project anymore.  If I needed this solution today I would look into using [deno_python](https://github.com/denosaurs/deno_python) which runs on Deno and Bun
+
 # PyNode
 
 [![Build Status](https://travis-ci.org/fridgerator/PyNode.svg?branch=master)](https://travis-ci.org/fridgerator/PyNode)
