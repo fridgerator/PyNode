@@ -1,4 +1,5 @@
 /node_modules
+docker-example/node_modules
 /Python-3.7.3
 /build
 /.vscode
